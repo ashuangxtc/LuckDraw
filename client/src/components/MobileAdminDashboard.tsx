@@ -127,7 +127,7 @@ const MobileAdminDashboard = () => {
   // 开始活动
   const startActivity = async () => {
     try {
-      const response = await fetch('/api/admin-basic?action=set-state', {
+      const response = await fetch('/api/lottery-basic?action=set-state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -154,7 +154,7 @@ const MobileAdminDashboard = () => {
   // 暂停活动
   const pauseActivity = async () => {
     try {
-      const response = await fetch('/api/admin-basic?action=set-state', {
+      const response = await fetch('/api/lottery-basic?action=set-state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -181,7 +181,7 @@ const MobileAdminDashboard = () => {
   // 结束活动
   const endActivity = async () => {
     try {
-      const response = await fetch('/api/admin-basic?action=set-state', {
+      const response = await fetch('/api/lottery-basic?action=set-state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

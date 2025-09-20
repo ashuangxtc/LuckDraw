@@ -77,19 +77,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       currentState = state;
       console.log('Admin set state to:', state);
       
-      // 同步到lottery API
-      try {
-        const protocol = req.headers['x-forwarded-proto'] || 'https';
-        const host = req.headers.host;
-        await fetch(`${protocol}://${host}/api/lottery-basic?action=set-state`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ state })
-        });
-        console.log('State synced to lottery API');
-      } catch (error) {
-        console.error('Failed to sync state to lottery:', error);
-      }
+      // 暂时移除fetch调用，避免serverless函数冲突
+      // TODO: 状态同步需要改用其他方案
       
       return res.json({ ok: true, state: currentState });
     }
@@ -106,19 +95,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ ok: false, error: 'Not authenticated' });
     }
 
-    try {
-      // 尝试从lottery API获取参与者数据
-      const protocol = req.headers['x-forwarded-proto'] || 'https';
-      const host = req.headers.host;
-      const lotteryRes = await fetch(`${protocol}://${host}/api/lottery-basic?action=participants`);
-      
-      if (lotteryRes.ok) {
-        const lotteryData = await lotteryRes.json();
-        return res.json(lotteryData); // 直接返回lottery API的数据
-      }
-    } catch (error) {
-      console.error('Failed to fetch lottery participants:', error);
-    }
+    // 暂时移除fetch调用，避免serverless函数冲突
+    // try {
+    //   const protocol = req.headers['x-forwarded-proto'] || 'https';
+    //   const host = req.headers.host;
+    //   const lotteryRes = await fetch(`${protocol}://${host}/api/lottery-basic?action=participants`);
+    //   
+    //   if (lotteryRes.ok) {
+    //     const lotteryData = await lotteryRes.json();
+    //     return res.json(lotteryData);
+    //   }
+    // } catch (error) {
+    //   console.error('Failed to fetch lottery participants:', error);
+    // }
 
     // 如果无法获取lottery数据，返回admin本地数据
     const participantList = Object.values(participants);
@@ -154,18 +143,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     currentState = 'waiting';
     currentConfig = { hongzhongPercent: 33, redCountMode: 1 };
     
-    // 同步重置到lottery API
-    try {
-      const protocol = req.headers['x-forwarded-proto'] || 'https';
-      const host = req.headers.host;
-      await fetch(`${protocol}://${host}/api/lottery-basic?action=reset-all`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      console.log('Reset synced to lottery API');
-    } catch (error) {
-      console.error('Failed to sync reset to lottery:', error);
-    }
+    // 暂时移除fetch调用，避免serverless函数冲突
+    // try {
+    //   const protocol = req.headers['x-forwarded-proto'] || 'https';
+    //   const host = req.headers.host;
+    //   await fetch(`${protocol}://${host}/api/lottery-basic?action=reset-all`, {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' }
+    //   });
+    //   console.log('Reset synced to lottery API');
+    // } catch (error) {
+    //   console.error('Failed to sync reset to lottery:', error);
+    // }
     
     console.log('Admin data reset completed');
     return res.json({ ok: true, message: 'Data reset successfully' });

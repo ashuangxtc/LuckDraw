@@ -111,16 +111,8 @@ export default function AdminEnhanced() {
   // 设置活动状态
   const setState = async (state: 'waiting' | 'open' | 'closed') => {
     try {
-      // 先检查认证
-      const authResponse = await fetch('/api/admin-basic?action=me', { credentials: 'include' });
-      if (!authResponse.ok) {
-        setAuthErr('认证失败，请重新登录');
-        setAuthed(false);
-        return;
-      }
-
-      // 直接设置到lottery-basic，避免双后端冲突
-      const response = await fetch('/api/lottery-basic?action=sync-state', {
+      // 直接设置到lottery-basic，这是游戏的主要状态
+      const response = await fetch('/api/lottery-basic?action=set-state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state })

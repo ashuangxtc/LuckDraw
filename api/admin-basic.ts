@@ -23,15 +23,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 管理员登录
   if (method === 'POST' && action === 'login') {
-    const { password } = req.body || {};
-    
-    if (password === 'admin123') {
-      res.setHeader('Set-Cookie', 'admin_logged_in=true; HttpOnly; Path=/; Max-Age=3600');
-      console.log('Admin login successful');
-      return res.json({ ok: true, message: 'Login successful' });
-    } else {
-      console.log('Admin login failed - wrong password');
-      return res.status(401).json({ ok: false, error: 'Invalid password' });
+    try {
+      const { password } = req.body || {};
+      console.log('Login attempt received, password provided:', !!password);
+      
+      const expectedPassword = process.env.ADMIN_PASSWORD || 'admin123';
+      
+      if (password === expectedPassword) {
+        res.setHeader('Set-Cookie', 'admin_logged_in=true; HttpOnly; Path=/; Max-Age=3600');
+        console.log('Admin login successful');
+        return res.json({ ok: true, message: 'Login successful' });
+      } else {
+        console.log('Admin login failed - wrong password, expected:', expectedPassword.substring(0,3) + '***');
+        return res.status(401).json({ ok: false, error: 'Invalid password' });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return res.status(500).json({ ok: false, error: 'Login failed' });
     }
   }
 

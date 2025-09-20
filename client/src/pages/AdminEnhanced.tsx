@@ -45,15 +45,19 @@ export default function AdminEnhanced() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // 只使用lottery-basic作为数据源，避免冲突
-      const statusRes = await fetch('/api/lottery-basic?action=status').then(r => r.json());
+      // 获取参与者数据和状态数据
+      const [statusRes, participantsRes] = await Promise.all([
+        fetch('/api/lottery-basic?action=status').then(r => r.json()),
+        fetch('/api/lottery-basic?action=participants').then(r => r.json()).catch(() => ({ participants: [] }))
+      ]);
       
       console.log('状态数据:', statusRes);
+      console.log('参与者数据:', participantsRes);
       
-      // 使用状态数据
+      // 合并数据
       const mergedData = {
         ok: true,
-        participants: [], // 暂时为空，避免复杂的参与者获取
+        participants: participantsRes.participants || [],
         stats: statusRes.stats || { total: 0, participated: 0, winners: 0 },
         state: statusRes.state,
         config: statusRes.config

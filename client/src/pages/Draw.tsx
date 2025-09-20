@@ -320,7 +320,16 @@ export default function DrawPage(){
       }catch{} 
     }
     const pickIndex = cards.findIndex(c=>c.id===id);
-    const res = await apiFetch('/api/lottery-basic?action=draw',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pick: pickIndex })});
+    
+    // 生成clientId和获取pid
+    const clientId = `${navigator.userAgent || ''}_${Date.now()}`.substring(0, 100);
+    const pid = userPid || 0;
+    
+    const res = await apiFetch('/api/lottery-basic?action=draw',{
+      method:'POST', 
+      headers:{'Content-Type':'application/json'}, 
+      body: JSON.stringify({ clientId, pid, pick: pickIndex })
+    });
     if(!res.ok){
       if(res.status===409||res.status===429){
         markAlready();

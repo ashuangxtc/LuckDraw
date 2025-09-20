@@ -36,6 +36,27 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  // 获取参与者列表 - GET /api/lottery-basic?action=participants
+  if (method === 'GET' && action === 'participants') {
+    const participantList = Object.values(participants);
+    return res.json({
+      ok: true,
+      participants: participantList.map(p => ({
+        pid: p.pid,
+        participated: p.participated,
+        win: p.win,
+        joinTime: p.joinTime
+      })),
+      stats: {
+        total: participantList.length,
+        participated: participantList.filter(p => p.participated).length,
+        winners: participantList.filter(p => p.win).length
+      },
+      state: currentState,
+      config: currentConfig
+    });
+  }
+
   // 获取配置 - GET /api/lottery-basic?action=config  
   if (method === 'GET' && action === 'config') {
     return res.json(currentConfig);

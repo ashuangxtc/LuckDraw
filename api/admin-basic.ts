@@ -1,11 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-// 内联状态存储，避免导入问题
-let currentState: 'waiting' | 'open' | 'closed' = 'waiting';
-let currentConfig = {
-  hongzhongPercent: 33,
-  redCountMode: 1
-};
+import { 
+  globalState, 
+  globalConfig, 
+  resetGlobalState,
+  updateGlobalState,
+  updateGlobalConfig,
+  getAllGlobalParticipants
+} from './_shared/global-state';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
@@ -20,41 +21,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // 简单的登录测试
+  // 管理员登录
   if (method === 'POST' && action === 'login') {
-    try {
-      const { password } = req.body || {};
-      const expectedPassword = process.env.ADMIN_PASSWORD || 'Dreammore123';
-      
-      if (password === expectedPassword) {
-        // 设置简单的会话标记
-        res.setHeader('Set-Cookie', 'admin_logged_in=true; HttpOnly; Max-Age=7200; SameSite=Lax; Path=/');
-        return res.json({ ok: true, message: 'Login successful' });
-      } else {
-        return res.status(401).json({ ok: false, error: 'Invalid password' });
-      }
-    } catch (error) {
-      return res.status(500).json({ 
-        ok: false, 
-        error: 'Login failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
+    const { password } = req.body || {};
+    
+    if (password === 'admin123') {
+      res.setHeader('Set-Cookie', 'admin_logged_in=true; HttpOnly; Path=/; Max-Age=3600');
+      console.log('Admin login successful');
+      return res.json({ ok: true, message: 'Login successful' });
+    } else {
+      console.log('Admin login failed - wrong password');
+      return res.status(401).json({ ok: false, error: 'Invalid password' });
     }
   }
 
-  // 检查登录状态
+  // 管理员登出
+  if (method === 'POST' && action === 'logout') {
+    res.setHeader('Set-Cookie', 'admin_logged_in=; HttpOnly; Path=/; Max-Age=0');
+    return res.json({ ok: true, message: 'Logout successful' });
+  }
+
+  // 检查管理员状态
   if (method === 'GET' && action === 'me') {
     const cookies = req.headers.cookie || '';
     const isLoggedIn = cookies.includes('admin_logged_in=true');
-    
-    if (isLoggedIn) {
-      return res.json({ ok: true, authenticated: true });
-    } else {
-      return res.status(401).json({ ok: false, authenticated: false });
-    }
+    return res.json({ loggedIn: isLoggedIn });
   }
 
-  // 设置状态
+  // 设置游戏状态
   if (method === 'POST' && action === 'set-state') {
     const cookies = req.headers.cookie || '';
     const isLoggedIn = cookies.includes('admin_logged_in=true');
@@ -62,21 +56,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!isLoggedIn) {
       return res.status(401).json({ ok: false, error: 'Not authenticated' });
     }
-    
+
     const { state } = req.body || {};
-    if (['waiting', 'open', 'closed'].includes(state)) {
-      currentState = state;
-      
-      // 同步状态到 lottery-basic (不使用 fetch，避免函数调用失败)
-      console.log('State updated to:', currentState);
-      
-      return res.json({ ok: true, state: currentState });
-    } else {
-      return res.status(400).json({ ok: false, error: 'Invalid state' });
+    if (state && ['waiting', 'open', 'closed'].includes(state)) {
+      updateGlobalState(state);
+      console.log('Admin set state to:', state);
+      return res.json({ ok: true, state: globalState() });
     }
+    
+    return res.status(400).json({ ok: false, error: 'Invalid state' });
   }
 
-  // 获取参与者列表（模拟数据）
+  // 获取参与者列表
   if (method === 'GET' && action === 'participants') {
     const cookies = req.headers.cookie || '';
     const isLoggedIn = cookies.includes('admin_logged_in=true');
@@ -85,17 +76,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ ok: false, error: 'Not authenticated' });
     }
 
+    const participants = getAllGlobalParticipants();
     return res.json({
-      total: 0,
-      items: [],
-      state: currentState,
+      ok: true,
+      participants: participants.map(p => ({
+        pid: p.pid,
+        participated: p.participated,
+        win: p.win,
+        joinTime: p.joinTime
+      })),
       stats: {
-        total: 0,
-        participated: 0,
-        winners: 0,
-        pending: 0
+        total: participants.length,
+        participated: participants.filter(p => p.participated).length,
+        winners: participants.filter(p => p.win).length
       },
-      config: currentConfig
+      state: globalState(),
+      config: globalConfig()
     });
   }
 
@@ -108,16 +104,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ ok: false, error: 'Not authenticated' });
     }
 
-    // 清除admin数据
-    Object.keys(participants).forEach(key => delete participants[key]);
-    currentState = 'waiting';
-    currentConfig = { hongzhongPercent: 50 };
-    
-    console.log('Admin data reset completed');
-    return res.json({ ok: true, message: 'Data reset successfully' });
+    resetGlobalState();
+    console.log('Admin reset all data');
+    return res.json({ ok: true, message: 'All data reset successfully' });
   }
 
-  // 配置管理（模拟）
+  // 配置管理
   if (action === 'config') {
     const cookies = req.headers.cookie || '';
     const isLoggedIn = cookies.includes('admin_logged_in=true');
@@ -127,21 +119,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (method === 'GET') {
-      // 返回当前配置
-      return res.json(currentConfig);
-    } else if (method === 'POST') {
-      // 更新配置
+      return res.json({ 
+        ok: true, 
+        config: globalConfig() 
+      });
+    }
+    
+    if (method === 'POST') {
       const { hongzhongPercent, redCountMode } = req.body || {};
       
+      const updates: any = {};
       if (typeof hongzhongPercent === 'number' && hongzhongPercent >= 0 && hongzhongPercent <= 100) {
-        currentConfig.hongzhongPercent = hongzhongPercent;
+        updates.hongzhongPercent = hongzhongPercent;
       }
-      if (typeof redCountMode === 'number' && [0, 1, 2, 3].includes(redCountMode)) {
-        currentConfig.redCountMode = redCountMode;
+      if (typeof redCountMode === 'number' && redCountMode >= 1) {
+        updates.redCountMode = redCountMode;
       }
       
-      console.log('Config updated to:', currentConfig);
-      return res.json({ ok: true, config: currentConfig });
+      if (Object.keys(updates).length > 0) {
+        updateGlobalConfig(updates);
+        console.log('Config updated:', updates);
+        return res.json({ 
+          ok: true, 
+          config: globalConfig() 
+        });
+      }
+      
+      return res.status(400).json({ ok: false, error: 'Invalid config values' });
     }
   }
 

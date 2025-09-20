@@ -1,32 +1,36 @@
 // 全局状态管理 - 在serverless函数间共享状态
 // 注意：这只在同一个执行环境中有效
 
-export let globalState: 'waiting' | 'open' | 'closed' = 'waiting';
-export let globalConfig = {
+let _globalState: 'waiting' | 'open' | 'closed' = 'waiting';
+let _globalConfig = {
   hongzhongPercent: 33,
   redCountMode: 1
 };
 
-export let globalParticipants: Record<string, {
+let _globalParticipants: Record<string, {
   pid: number;
   participated: boolean;
   win: boolean;
   joinTime: string;
 }> = {};
 
+export const globalState = () => _globalState;
+export const globalConfig = () => _globalConfig;
+export const globalParticipants = () => _globalParticipants;
+
 export function resetGlobalState() {
-  globalState = 'waiting';
-  globalConfig = { hongzhongPercent: 33, redCountMode: 1 };
-  Object.keys(globalParticipants).forEach(key => delete globalParticipants[key]);
+  _globalState = 'waiting';
+  _globalConfig = { hongzhongPercent: 33, redCountMode: 1 };
+  Object.keys(_globalParticipants).forEach(key => delete _globalParticipants[key]);
   console.log('Global state reset');
 }
 
 export function updateGlobalState(state: 'waiting' | 'open' | 'closed') {
-  globalState = state;
+  _globalState = state;
 }
 
-export function updateGlobalConfig(config: Partial<typeof globalConfig>) {
-  globalConfig = { ...globalConfig, ...config };
+export function updateGlobalConfig(config: Partial<typeof _globalConfig>) {
+  _globalConfig = { ..._globalConfig, ...config };
 }
 
 export function addGlobalParticipant(clientId: string, participant: {
@@ -35,13 +39,13 @@ export function addGlobalParticipant(clientId: string, participant: {
   win: boolean;
   joinTime: string;
 }) {
-  globalParticipants[clientId] = participant;
+  _globalParticipants[clientId] = participant;
 }
 
 export function getGlobalParticipant(clientId: string) {
-  return globalParticipants[clientId];
+  return _globalParticipants[clientId];
 }
 
 export function getAllGlobalParticipants() {
-  return Object.values(globalParticipants);
+  return Object.values(_globalParticipants);
 }

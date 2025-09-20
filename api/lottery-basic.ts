@@ -1,14 +1,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { 
-  globalState, 
-  globalConfig, 
-  resetGlobalState,
-  updateGlobalState,
-  updateGlobalConfig,
-  addGlobalParticipant,
-  getGlobalParticipant,
-  getAllGlobalParticipants
-} from './_shared/global-state';
+
+// 内联状态存储，避免导入问题  
+let currentState: 'waiting' | 'open' | 'closed' = 'waiting';
+let currentConfig = {
+  hongzhongPercent: 33,
+  redCountMode: 1
+};
+
+// 参与者记录
+let participants: Record<string, {
+  pid: number;
+  participated: boolean;
+  win: boolean;
+  joinTime: string;
+}> = {};
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
@@ -16,16 +21,16 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 获取活动状态 - GET /api/lottery-basic?action=status
   if (method === 'GET' && action === 'status') {
-    const participants = getAllGlobalParticipants();
+    const participantList = Object.values(participants);
     return res.json({
-      open: globalState() === 'open',
-      state: globalState(),
-      redCountMode: globalConfig().redCountMode,
-      config: globalConfig()(),
+      open: currentState === 'open',
+      state: currentState,
+      redCountMode: currentConfig.redCountMode,
+      config: currentConfig,
       stats: {
-        totalParticipants: participants.length,
-        participated: participants.filter(p => p.participated).length,
-        winners: participants.filter(p => p.win).length
+        totalParticipants: participantList.length,
+        participated: participantList.filter(p => p.participated).length,
+        winners: participantList.filter(p => p.win).length
       },
       timestamp: new Date().toISOString()
     });
@@ -33,7 +38,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 获取配置 - GET /api/lottery-basic?action=config  
   if (method === 'GET' && action === 'config') {
-    return res.json(globalConfig());
+    return res.json(currentConfig);
   }
 
   // 健康检查
@@ -41,7 +46,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({
       ok: true,
       message: 'Lottery API is working',
-      state: globalState(),
+      state: currentState,
       timestamp: new Date().toISOString()
     });
   }
@@ -50,11 +55,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   if (method === 'POST' && action === 'set-state') {
     const { state } = req.body || {};
     if (state && ['waiting', 'open', 'closed'].includes(state)) {
-      updateGlobalState(state);
+      currentState = state;
       console.log('Lottery state updated to:', state);
       return res.json({
         ok: true,
-        state: globalState()(),
+        state: currentState,
         timestamp: new Date().toISOString()
       });
     }
@@ -68,7 +73,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     
     // 如果前端提供了有效的PID，先尝试找到对应的参与者
     if (clientPid && typeof clientPid === 'number' && clientPid >= 100 && clientPid <= 999) {
-      const existingParticipant = getAllGlobalParticipants().find(p => p.pid === clientPid);
+      const existingParticipant = Object.values(participants).find(p => p.pid === clientPid);
       if (existingParticipant) {
         return res.json({
           pid: existingParticipant.pid,
@@ -86,11 +91,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     const realIp = req.headers['x-real-ip'] || '';
     const clientId = `${userAgent}_${forwardedFor}_${realIp}`.substring(0, 100); // 限制长度
     
-    let participant = getGlobalParticipant(clientId);
+    let participant = participants[clientId];
     if (!participant) {
       // 生成3位数PID，确保唯一性
       let pid;
-      const existingParticipants = getAllGlobalParticipants();
+      const existingParticipants = Object.values(participants);
       do {
         pid = Math.floor(Math.random() * 900) + 100; // 100-999
       } while (existingParticipants.some(p => p.pid === pid));
@@ -101,7 +106,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
         win: false,
         joinTime: new Date().toISOString()
       };
-      addGlobalParticipant(clientId, participant);
+      participants[clientId] = participant;
       console.log('新参与者创建:', { pid: participant.pid });
     }
     
@@ -114,13 +119,13 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 抽奖 - POST /api/lottery-basic?action=draw
   if (method === 'POST' && action === 'draw') {
-    console.log('抽奖请求 - 当前状态:', globalState);
+    console.log('抽奖请求 - 当前状态:', currentState);
     
-    if (globalState() !== 'open') {
+    if (currentState !== 'open') {
       return res.status(400).json({ 
         ok: false, 
         error: 'Activity not open',
-        state: globalState() 
+        state: currentState 
       });
     }
 
@@ -130,16 +135,16 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ ok: false, error: 'Missing clientId or pid' });
     }
 
-    let participant = getGlobalParticipant(clientId);
+    let participant = participants[clientId];
     
     // 如果没有找到，尝试通过PID找到参与者
     if (!participant) {
-      const allParticipants = getAllGlobalParticipants();
+      const allParticipants = Object.values(participants);
       const foundByPid = allParticipants.find(p => p.pid === pid);
       if (foundByPid) {
         participant = foundByPid;
         // 更新clientId映射
-        addGlobalParticipant(clientId, participant);
+        participants[clientId] = participant;
       }
     }
 
@@ -157,7 +162,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     // 标记为已参与
     participant.participated = true;
-    addGlobalParticipant(clientId, participant);
+    participants[clientId] = participant;
 
     console.log('抽奖执行 - PID:', pid);
     return res.json({ 
@@ -169,7 +174,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 发牌 - POST /api/lottery-basic?action=deal
   if (method === 'POST' && action === 'deal') {
-    const { redCount = globalConfig().redCountMode } = req.body || {};
+    const { redCount = currentConfig.redCountMode } = req.body || {};
     
     // 生成随机牌组
     const totalCards = 9;
@@ -205,7 +210,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   if (method === 'POST' && action === 'pick') {
     const { clientId, pid, cardIndex } = req.body || {};
     
-    if (globalState() !== 'open') {
+    if (currentState !== 'open') {
       return res.status(400).json({ 
         ok: false, 
         error: 'Activity not open' 
@@ -219,14 +224,14 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    let participant = getGlobalParticipant(clientId);
+    let participant = participants[clientId];
     
     if (!participant) {
-      const allParticipants = getAllGlobalParticipants();
+      const allParticipants = Object.values(participants);
       const foundByPid = allParticipants.find(p => p.pid === pid);
       if (foundByPid) {
         participant = foundByPid;
-        addGlobalParticipant(clientId, participant);
+        participants[clientId] = participant;
       }
     }
 
@@ -246,10 +251,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     // 这里应该根据实际的牌组数据来判断是否中奖
     // 暂时使用随机逻辑作为示例
-    const isWin = Math.random() < (globalConfig().hongzhongPercent / 100);
+    const isWin = Math.random() < (currentConfig.hongzhongPercent / 100);
     
     participant.win = isWin;
-    addGlobalParticipant(clientId, participant);
+    participants[clientId] = participant;
 
     console.log('翻牌结果:', { pid, cardIndex, isWin });
 
@@ -271,11 +276,22 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     // 查找并重置参与者
     let found = false;
-    const allParticipants = getAllGlobalParticipants();
-    // 这里需要改进逻辑，因为我们无法直接遍历globalParticipants
-    // 暂时简单处理
-    console.log('参与者重置请求:', pidToReset);
-    return res.json({ ok: true });
+    for (const [clientId, participant] of Object.entries(participants)) {
+      if (participant.pid === pidToReset) {
+        participant.participated = false;
+        participant.win = false;
+        participants[clientId] = participant;
+        found = true;
+        break;
+      }
+    }
+
+    if (found) {
+      console.log('参与者重置:', pidToReset);
+      return res.json({ ok: true, message: `Participant ${pidToReset} reset` });
+    } else {
+      return res.json({ ok: true, message: 'Participant not found' });
+    }
   }
 
   // 同步状态 - POST /api/lottery-basic?action=sync-state
@@ -283,25 +299,34 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     const { state, config } = req.body || {};
     
     if (state && ['waiting', 'open', 'closed'].includes(state)) {
-      updateGlobalState(state);
-      console.log('Lottery state synced to:', globalState);
+      currentState = state;
+      console.log('Lottery state synced to:', currentState);
     }
     
     if (config) {
-      updateGlobalConfig(config);
-      console.log('Lottery config synced to:', globalConfig);
+      if (typeof config.hongzhongPercent === 'number') {
+        currentConfig.hongzhongPercent = config.hongzhongPercent;
+      }
+      if (typeof config.redCountMode === 'number') {
+        currentConfig.redCountMode = config.redCountMode;
+      }
+      console.log('Lottery config synced to:', currentConfig);
     }
     
     return res.json({
       ok: true,
-      state: globalState(),
-      config: globalConfig()
+      state: currentState,
+      config: currentConfig
     });
   }
 
   // 重置所有数据 - POST /api/lottery-basic?action=reset-all  
   if (method === 'POST' && action === 'reset-all') {
-    resetGlobalState();
+    // 清除所有参与者数据
+    Object.keys(participants).forEach(key => delete participants[key]);
+    currentState = 'waiting';
+    currentConfig = { hongzhongPercent: 33, redCountMode: 1 };
+    
     console.log('Lottery data reset - all participants cleared, state reset to waiting');
     return res.json({ ok: true, message: 'Lottery data reset successfully' });
   }

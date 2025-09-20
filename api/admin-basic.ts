@@ -99,7 +99,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // 重置所有数据（模拟）
+  // 重置所有数据
   if (method === 'POST' && action === 'reset-all') {
     const cookies = req.headers.cookie || '';
     const isLoggedIn = cookies.includes('admin_logged_in=true');
@@ -108,8 +108,25 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ ok: false, error: 'Not authenticated' });
     }
 
-    console.log('Reset all data (mock)');
-    return res.json({ ok: true, message: 'All data reset' });
+    // 真正清除所有数据
+    Object.keys(participants).forEach(key => delete participants[key]);
+    currentState = 'waiting';
+    currentConfig = { hongzhongPercent: 50 };
+    
+    // 同步重置到 lottery-basic
+    try {
+      const protocol = req.headers['x-forwarded-proto'] || 'https';
+      const host = req.headers.host;
+      await fetch(`${protocol}://${host}/api/lottery-basic?action=reset-all`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Failed to sync reset to lottery-basic:', error);
+    }
+    
+    console.log('All data reset - participants cleared, state reset to waiting');
+    return res.json({ ok: true, message: 'All data reset successfully' });
   }
 
   // 配置管理（模拟）

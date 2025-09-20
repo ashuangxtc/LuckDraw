@@ -67,6 +67,14 @@ export function useActivityStatus(){
             window.dispatchEvent(new CustomEvent('resetWinState'));
           } catch {}
         }
+        
+        // 如果之前有PID但现在服务端没有对应的参与者，说明可能被重置了
+        if (savedPid && !j?.pid) {
+          try {
+            localStorage.removeItem('user_pid');
+            console.log('Detected reset - cleared local PID');
+          } catch {}
+        }
       }
     }catch{/* noop */}
   },[]);

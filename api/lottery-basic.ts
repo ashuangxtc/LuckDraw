@@ -248,5 +248,16 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  // 重置所有数据 - POST /api/lottery-basic?action=reset-all  
+  if (method === 'POST' && action === 'reset-all') {
+    // 清除所有参与者数据
+    Object.keys(participants).forEach(key => delete participants[key]);
+    currentState = 'waiting';
+    currentConfig = { hongzhongPercent: 33, redCountMode: 1 };
+    
+    console.log('Lottery data reset - all participants cleared, state reset to waiting');
+    return res.json({ ok: true, message: 'Lottery data reset successfully' });
+  }
+
   return res.status(404).json({ error: 'Not found' });
 }

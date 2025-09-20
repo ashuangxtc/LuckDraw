@@ -103,18 +103,29 @@ export default function AdminEnhanced() {
   // 设置活动状态
   const setState = async (state: 'waiting' | 'open' | 'closed') => {
     try {
-      const response = await fetch('/api/admin-basic?action=set-state', {
+      // 先检查认证
+      const authResponse = await fetch('/api/admin-basic?action=me', { credentials: 'include' });
+      if (!authResponse.ok) {
+        setAuthErr('认证失败，请重新登录');
+        setAuthed(false);
+        return;
+      }
+
+      // 设置状态到统一状态API
+      const response = await fetch('/api/state-sync?action=set-state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ state })
-      })
+      });
 
       if (response.ok) {
-        await loadData()
+        console.log('状态设置成功:', state);
+        await loadData();
+      } else {
+        console.error('状态设置失败:', await response.text());
       }
     } catch (error) {
-      console.error('设置状态失败:', error)
+      console.error('设置状态失败:', error);
     }
   }
 

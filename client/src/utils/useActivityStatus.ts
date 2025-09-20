@@ -17,7 +17,7 @@ export function useActivityStatus(){
 
   const fetchStatus = useCallback(async()=>{
     try{
-      const data = await apiFetch('/api/lottery-basic?action=status').then(r=>r.json());
+      const data = await apiFetch('/api/state-sync').then(r=>r.json());
       setStatus(map(data?.state||data?.status));
     }catch{ setStatus('none'); }
   },[]);

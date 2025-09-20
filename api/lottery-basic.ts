@@ -13,13 +13,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 获取活动状态 - GET /api/lottery-basic?action=status
   if (method === 'GET' && action === 'status') {
-    const state = currentState;
-    const config = currentConfig;
     return res.json({
-      open: state === 'open',
-      state: state,
-      redCountMode: config.redCountMode,
-      config: config,
+      open: currentState === 'open',
+      state: currentState,
+      redCountMode: currentConfig.redCountMode,
+      config: currentConfig,
       stats: {
         totalParticipants: 0,
         participated: 0,

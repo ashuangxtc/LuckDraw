@@ -1,5 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getState, getConfig } from './_shared/state';
+
+// 内联状态存储，避免导入问题  
+let currentState: 'waiting' | 'open' | 'closed' = 'waiting';
+let currentConfig = {
+  hongzhongPercent: 33,
+  redCountMode: 1
+};
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
@@ -7,8 +13,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 获取活动状态 - GET /api/lottery-basic?action=status
   if (method === 'GET' && action === 'status') {
-    const state = getState();
-    const config = getConfig();
+    const state = currentState;
+    const config = currentConfig;
     return res.json({
       open: state === 'open',
       state: state,
@@ -24,7 +30,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 获取配置 - GET /api/lottery-basic?action=config  
   if (method === 'GET' && action === 'config') {
-    return res.json(getConfig());
+    return res.json(currentConfig);
   }
 
   // 健康检查
@@ -32,7 +38,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({
       ok: true,
       message: 'Lottery API is working',
-      state: getState(),
+      state: currentState,
       timestamp: new Date().toISOString()
     });
   }
@@ -48,14 +54,12 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 抽奖 - POST /api/lottery-basic?action=draw
   if (method === 'POST' && action === 'draw') {
-    const state = getState();
-    if (state !== 'open') {
-      return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN', state: state });
+    if (currentState !== 'open') {
+      return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN', state: currentState });
     }
 
     const pick = req.body?.pick || 0;
-    const config = getConfig();
-    const win = Math.random() < (config.hongzhongPercent / 100);
+    const win = Math.random() < (currentConfig.hongzhongPercent / 100);
     
     return res.json({
       ok: true,
@@ -70,7 +74,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 发牌 - POST /api/lottery-basic?action=deal
   if (method === 'POST' && action === 'deal') {
-    if (getState() !== 'open') {
+    if (currentState !== 'open') {
       return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN' });
     }
     
@@ -83,11 +87,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 选择 - POST /api/lottery-basic?action=pick
   if (method === 'POST' && action === 'pick') {
-    if (getState() !== 'open') {
+    if (currentState !== 'open') {
       return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN' });
     }
 
-    const win = Math.random() < (getConfig().hongzhongPercent / 100);
+    const win = Math.random() < (currentConfig.hongzhongPercent / 100);
     return res.json({
       ok: true,
       win,

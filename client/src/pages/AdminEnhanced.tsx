@@ -112,17 +112,27 @@ export default function AdminEnhanced() {
       }
 
       // 设置状态到统一状态API
-      const response = await fetch('/api/state-sync?action=set-state', {
+      const stateResponse = await fetch('/api/state-sync?action=set-state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state })
       });
 
-      if (response.ok) {
+      // 同时同步到 lottery-basic
+      const lotteryResponse = await fetch('/api/lottery-basic?action=sync-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state })
+      });
+
+      if (stateResponse.ok && lotteryResponse.ok) {
         console.log('状态设置成功:', state);
         await loadData();
       } else {
-        console.error('状态设置失败:', await response.text());
+        console.error('状态设置失败:', {
+          state: await stateResponse.text(),
+          lottery: await lotteryResponse.text()
+        });
       }
     } catch (error) {
       console.error('设置状态失败:', error);

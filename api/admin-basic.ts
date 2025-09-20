@@ -66,7 +66,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     const { state } = req.body || {};
     if (['waiting', 'open', 'closed'].includes(state)) {
       currentState = state;
+      
+      // 同步状态到 lottery-basic (不使用 fetch，避免函数调用失败)
       console.log('State updated to:', currentState);
+      
       return res.json({ ok: true, state: currentState });
     } else {
       return res.status(400).json({ ok: false, error: 'Invalid state' });

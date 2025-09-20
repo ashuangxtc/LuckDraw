@@ -13,18 +13,6 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 获取活动状态 - GET /api/lottery-basic?action=status
   if (method === 'GET' && action === 'status') {
-    // 从状态同步API获取最新状态
-    try {
-      const stateRes = await fetch(`${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/state-sync`);
-      if (stateRes.ok) {
-        const stateData = await stateRes.json();
-        currentState = stateData.state || currentState;
-        currentConfig = stateData.config || currentConfig;
-      }
-    } catch (e) {
-      console.log('获取状态同步失败，使用本地状态');
-    }
-    
     return res.json({
       open: currentState === 'open',
       state: currentState,
@@ -64,18 +52,6 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 抽奖 - POST /api/lottery-basic?action=draw
   if (method === 'POST' && action === 'draw') {
-    // 从状态同步API获取最新状态
-    try {
-      const stateRes = await fetch(`${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/state-sync`);
-      if (stateRes.ok) {
-        const stateData = await stateRes.json();
-        currentState = stateData.state || currentState;
-        currentConfig = stateData.config || currentConfig;
-      }
-    } catch (e) {
-      console.log('获取状态同步失败，使用本地状态');
-    }
-    
     if (currentState !== 'open') {
       return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN', state: currentState });
     }
@@ -96,17 +72,6 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 发牌 - POST /api/lottery-basic?action=deal
   if (method === 'POST' && action === 'deal') {
-    // 检查最新状态
-    try {
-      const stateRes = await fetch(`${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/state-sync`);
-      if (stateRes.ok) {
-        const stateData = await stateRes.json();
-        currentState = stateData.state || currentState;
-      }
-    } catch (e) {
-      console.log('获取状态同步失败');
-    }
-    
     if (currentState !== 'open') {
       return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN' });
     }
@@ -120,17 +85,6 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 选择 - POST /api/lottery-basic?action=pick
   if (method === 'POST' && action === 'pick') {
-    // 检查最新状态
-    try {
-      const stateRes = await fetch(`${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/state-sync`);
-      if (stateRes.ok) {
-        const stateData = await stateRes.json();
-        currentState = stateData.state || currentState;
-      }
-    } catch (e) {
-      console.log('获取状态同步失败');
-    }
-    
     if (currentState !== 'open') {
       return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN' });
     }
@@ -148,6 +102,32 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({
       ok: true,
       arrangement: ['back', 'back', 'back']
+    });
+  }
+
+  // 同步状态 - POST /api/lottery-basic?action=sync-state
+  if (method === 'POST' && action === 'sync-state') {
+    const { state, config } = req.body || {};
+    
+    if (state && ['waiting', 'open', 'closed'].includes(state)) {
+      currentState = state;
+      console.log('Lottery state synced to:', currentState);
+    }
+    
+    if (config) {
+      if (typeof config.hongzhongPercent === 'number') {
+        currentConfig.hongzhongPercent = config.hongzhongPercent;
+      }
+      if (typeof config.redCountMode === 'number') {
+        currentConfig.redCountMode = config.redCountMode;
+      }
+      console.log('Lottery config synced to:', currentConfig);
+    }
+    
+    return res.json({
+      ok: true,
+      state: currentState,
+      config: currentConfig
     });
   }
 

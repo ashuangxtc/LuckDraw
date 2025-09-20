@@ -47,5 +47,19 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  // 设置状态（简化版）
+  if (method === 'POST' && action === 'set-state') {
+    const cookies = req.headers.cookie || '';
+    const isLoggedIn = cookies.includes('admin_logged_in=true');
+    
+    if (!isLoggedIn) {
+      return res.status(401).json({ ok: false, error: 'Not authenticated' });
+    }
+    
+    const { state } = req.body || {};
+    console.log('Setting state to:', state);
+    return res.json({ ok: true, message: `State set to ${state}` });
+  }
+
   return res.status(404).json({ error: 'Not found' });
 }

@@ -128,6 +128,10 @@ export default function DrawPage(){
               // 保存PID到本地存储
               try { localStorage.setItem('user_pid', data.pid.toString()); } catch {}
             }
+            if (data && data.clientId) {
+              // 保存clientId到本地存储
+              try { localStorage.setItem('user_client_id', data.clientId); } catch {}
+            }
             if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} }
             if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} }
           } catch {}
@@ -164,6 +168,9 @@ export default function DrawPage(){
               if (data && data.pid) { 
                 setUserPid(data.pid); 
                 try { localStorage.setItem('user_pid', data.pid.toString()); } catch {}
+              }
+              if (data && data.clientId) {
+                try { localStorage.setItem('user_client_id', data.clientId); } catch {}
               } 
               if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} } 
               if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} } 
@@ -252,6 +259,9 @@ export default function DrawPage(){
               setUserPid(data.pid);
               try { localStorage.setItem('user_pid', data.pid.toString()); } catch {}
             }
+            if (data && data.clientId) {
+              try { localStorage.setItem('user_client_id', data.clientId); } catch {}
+            }
           }catch{} 
         } 
       }catch{} 
@@ -315,14 +325,21 @@ export default function DrawPage(){
               setUserPid(data.pid);
               try { localStorage.setItem('user_pid', data.pid.toString()); } catch {}
             }
+            if (data && data.clientId) {
+              try { localStorage.setItem('user_client_id', data.clientId); } catch {}
+            }
           }catch{} 
         } 
       }catch{} 
     }
     const pickIndex = cards.findIndex(c=>c.id===id);
     
-    // 生成clientId和获取pid
-    const clientId = `${navigator.userAgent || ''}_${Date.now()}`.substring(0, 100);
+    // 使用保存的clientId和pid
+    let clientId = '';
+    try {
+      clientId = localStorage.getItem('user_client_id') || '';
+    } catch {}
+    
     const pid = userPid || 0;
     
     const res = await apiFetch('/api/lottery-basic?action=draw',{

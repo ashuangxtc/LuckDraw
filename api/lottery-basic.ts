@@ -137,7 +137,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({
       pid: participant.pid,
       participated: participant.participated,
-      win: participant.win
+      win: participant.win,
+      clientId: clientId // 返回clientId供前端保存使用
     });
   }
 

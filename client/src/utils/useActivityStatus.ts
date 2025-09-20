@@ -54,9 +54,12 @@ export function useActivityStatus(){
         const wasParticipated = !!j?.participated;
         setAlready(wasParticipated);
         
-        // 保存PID
+        // 保存PID和clientId
         if (j?.pid) {
           try { localStorage.setItem('user_pid', j.pid.toString()); } catch {}
+        }
+        if (j?.clientId) {
+          try { localStorage.setItem('user_client_id', j.clientId); } catch {}
         }
         
         // 如果服务端显示未参与，清除本地中奖状态

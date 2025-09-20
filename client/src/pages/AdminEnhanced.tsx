@@ -139,10 +139,8 @@ export default function AdminEnhanced() {
   // 重置单个参与者
   const resetOne = async (pid: number) => {
     try {
-      await fetch('/api/lottery-basic?action=reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pid })
+      await fetch(`/api/lottery-basic?action=reset-participant&pid=${pid}`, {
+        method: 'DELETE'
       })
       await loadData()
       alert(`参与者 #${pid} 已重置`)

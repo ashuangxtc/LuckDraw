@@ -17,7 +17,7 @@ export function useActivityStatus(){
 
   const fetchStatus = useCallback(async()=>{
     try{
-      const data = await apiFetch('/api/state-sync').then(r=>r.json());
+      const data = await apiFetch('/api/lottery-basic?action=status').then(r=>r.json());
       console.log('状态查询结果:', data);
       const newStatus = map(data?.state||data?.status);
       console.log('映射后状态:', newStatus);

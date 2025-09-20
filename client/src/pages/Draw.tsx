@@ -321,7 +321,7 @@ export default function DrawPage(){
                 alt="back"
                 draggable={false}
                 style={{ position:'absolute', inset:0 as any, width:'100%', height:'100%', objectFit:'cover', borderRadius:18 as any,
-                  backfaceVisibility:'hidden' as any, WebkitBackfaceVisibility:'hidden' as any,
+                  backfaceVisibility:'visible' as any, WebkitBackfaceVisibility:'visible' as any,
                   transform:'rotateY(0deg) translateZ(0.01px)',
                   opacity: c.flipped ? 0 : 1, zIndex:1 as any }}
                 src={(won ? (resolvedWin ?? winUrl) : (resolvedBack ?? backUrl))}
@@ -330,7 +330,7 @@ export default function DrawPage(){
                 alt={c.face==='hongzhong' ? 'red' : 'white'}
                 draggable={false}
                 style={{ position:'absolute', inset:0 as any, width:'100%', height:'100%', objectFit:'cover', borderRadius:18 as any,
-                  backfaceVisibility:'hidden' as any, WebkitBackfaceVisibility:'hidden' as any,
+                  backfaceVisibility:'visible' as any, WebkitBackfaceVisibility:'visible' as any,
                   transform:'rotateY(180deg) translateZ(0.01px)', backgroundColor:'#fff',
                   opacity: c.flipped ? 1 : 0, zIndex:2 as any }}
                 src={c.face==='hongzhong' ? (resolvedRed ?? redUrl) : (resolvedWhite ?? whiteUrl)}

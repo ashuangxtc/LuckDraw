@@ -55,11 +55,14 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     
     let participant = participants[clientId];
     if (!participant) {
-      // 使用时间戳+随机数确保PID唯一且不重复
-      const timestamp = Date.now();
-      const random = Math.floor(Math.random() * 1000);
+      // 生成3位数PID，确保唯一性
+      let pid;
+      do {
+        pid = Math.floor(Math.random() * 900) + 100; // 100-999
+      } while (Object.values(participants).some(p => p.pid === pid));
+      
       participant = {
-        pid: parseInt(`${timestamp.toString().slice(-4)}${random.toString().padStart(3, '0')}`),
+        pid: pid,
         participated: false,
         win: false,
         joinTime: new Date().toISOString()

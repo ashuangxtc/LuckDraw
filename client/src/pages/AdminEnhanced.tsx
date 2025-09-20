@@ -45,25 +45,23 @@ export default function AdminEnhanced() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // 获取真实参与者数据
+      // 获取真实参与者数据和状态（统一从lottery-basic获取）
       const participantsRes = await fetch('/api/lottery-basic?action=participants').then(r => r.json());
-      
-      // 获取最新状态
-      const stateRes = await fetch('/api/state-sync').then(r => r.json());
+      const statusRes = await fetch('/api/lottery-basic?action=status').then(r => r.json());
       
       console.log('参与者数据:', participantsRes);
-      console.log('状态数据:', stateRes);
+      console.log('状态数据:', statusRes);
       
-      // 合并数据，以state-sync的状态为准
+      // 合并数据
       const mergedData = {
         ...participantsRes,
-        state: stateRes.state,
-        config: stateRes.config
+        state: statusRes.state,
+        config: statusRes.config
       };
       
       setData(mergedData)
       setStats(participantsRes.stats)
-      setHongzhongPercent([stateRes.config.hongzhongPercent])
+      setHongzhongPercent([statusRes.config.hongzhongPercent])
       setConnected(true)
     } catch (error) {
       console.error('加载数据失败:', error)
@@ -121,28 +119,19 @@ export default function AdminEnhanced() {
         return;
       }
 
-      // 设置状态到统一状态API
-      const stateResponse = await fetch('/api/state-sync?action=set-state', {
+      // 直接设置到lottery-basic，避免双后端冲突
+      const response = await fetch('/api/lottery-basic?action=sync-state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state })
       });
 
-      // 同时同步到 lottery-basic
-      const lotteryResponse = await fetch('/api/lottery-basic?action=sync-state', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state })
-      });
-
-      if (stateResponse.ok && lotteryResponse.ok) {
+      if (response.ok) {
         console.log('状态设置成功:', state);
         await loadData();
       } else {
-        console.error('状态设置失败:', {
-          state: await stateResponse.text(),
-          lottery: await lotteryResponse.text()
-        });
+        const errorText = await response.text();
+        console.error('状态设置失败:', errorText);
       }
     } catch (error) {
       console.error('设置状态失败:', error);
@@ -411,7 +400,7 @@ export default function AdminEnhanced() {
                   ) : (
                     data.items.map((item) => (
                       <tr key={item.pid} className="border-b hover:bg-gray-50">
-                        <td className="py-2 md:py-3 px-3 md:px-4 font-mono text-blue-600">#{item.pid}</td>
+                        <td className="py-2 md:py-3 px-3 md:px-4 font-bold text-black">{item.pid}</td>
                         <td className="py-2 md:py-3 px-3 md:px-4 min-w-20 md:min-w-20 whitespace-nowrap">
                           <span className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${ item.participated ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' }`}>
                             {item.participated ? '已参与' : '未参与'}

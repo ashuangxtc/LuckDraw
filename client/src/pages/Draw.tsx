@@ -104,10 +104,13 @@ export default function DrawPage(){
         // 尝试获取本地保存的PID
         let savedPid = null;
         try {
-          savedPid = localStorage.getItem('user_pid');
-          if (savedPid) {
-            savedPid = parseInt(savedPid);
-            setUserPid(savedPid);
+          const pidStr = localStorage.getItem('user_pid');
+          if (pidStr && pidStr !== 'null' && pidStr !== 'undefined') {
+            const parsed = parseInt(pidStr);
+            if (!isNaN(parsed) && parsed >= 100 && parsed <= 999) {
+              savedPid = parsed;
+              setUserPid(savedPid);
+            }
           }
         } catch {}
         
@@ -140,7 +143,15 @@ export default function DrawPage(){
       if (status==='start' && phase==='idle' && !joined) {
         try{ 
           let savedPid = null;
-          try { savedPid = parseInt(localStorage.getItem('user_pid') || ''); } catch {}
+          try { 
+            const pidStr = localStorage.getItem('user_pid');
+            if (pidStr && pidStr !== 'null' && pidStr !== 'undefined') {
+              const parsed = parseInt(pidStr);
+              if (!isNaN(parsed) && parsed >= 100 && parsed <= 999) {
+                savedPid = parsed;
+              }
+            }
+          } catch {}
           const r = await apiFetch('/api/lottery-basic?action=join',{
             method:'POST',
             headers: {'Content-Type': 'application/json'},
@@ -219,7 +230,15 @@ export default function DrawPage(){
     if(!joined){ 
       try{ 
         let savedPid = null;
-        try { savedPid = parseInt(localStorage.getItem('user_pid') || ''); } catch {}
+        try { 
+          const pidStr = localStorage.getItem('user_pid');
+          if (pidStr && pidStr !== 'null' && pidStr !== 'undefined') {
+            const parsed = parseInt(pidStr);
+            if (!isNaN(parsed) && parsed >= 100 && parsed <= 999) {
+              savedPid = parsed;
+            }
+          }
+        } catch {}
         const r=await apiFetch('/api/lottery-basic?action=join',{
           method:'POST',
           headers: {'Content-Type': 'application/json'},
@@ -274,7 +293,15 @@ export default function DrawPage(){
     if(!joined){ 
       try{ 
         let savedPid = null;
-        try { savedPid = parseInt(localStorage.getItem('user_pid') || ''); } catch {}
+        try { 
+          const pidStr = localStorage.getItem('user_pid');
+          if (pidStr && pidStr !== 'null' && pidStr !== 'undefined') {
+            const parsed = parseInt(pidStr);
+            if (!isNaN(parsed) && parsed >= 100 && parsed <= 999) {
+              savedPid = parsed;
+            }
+          }
+        } catch {}
         const r=await apiFetch('/api/lottery-basic?action=join',{
           method:'POST',
           headers: {'Content-Type': 'application/json'},

@@ -54,16 +54,18 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     // 尝试从请求体获取前端提供的PID
     const { clientPid } = req.body || {};
     
-    // 如果前端提供了PID，先尝试找到对应的参与者
-    if (clientPid) {
+    // 如果前端提供了有效的PID，先尝试找到对应的参与者
+    if (clientPid && typeof clientPid === 'number' && clientPid >= 100 && clientPid <= 999) {
       const existingParticipant = Object.values(participants).find(p => p.pid === clientPid);
       if (existingParticipant) {
-        console.log('根据PID找到现有参与者:', { pid: existingParticipant.pid, participated: existingParticipant.participated });
+        // console.log('根据PID找到现有参与者:', { pid: existingParticipant.pid, participated: existingParticipant.participated });
         return res.json({
           pid: existingParticipant.pid,
           participated: existingParticipant.participated,
           win: existingParticipant.win
         });
+      } else {
+        console.log('前端提供的PID未找到对应参与者:', { clientPid });
       }
     }
     
@@ -88,10 +90,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
         joinTime: new Date().toISOString()
       };
       participants[clientId] = participant;
-      console.log('新参与者创建:', { clientId: clientId.slice(0, 30) + '...', pid: participant.pid });
-    } else {
-      console.log('现有参与者:', { pid: participant.pid, participated: participant.participated });
+      console.log('新参与者创建:', { pid: participant.pid });
     }
+    // else {
+    //   console.log('现有参与者:', { pid: participant.pid, participated: participant.participated });
+    // }
     
     return res.json({
       pid: participant.pid,

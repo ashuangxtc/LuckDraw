@@ -35,7 +35,12 @@ export function useActivityStatus(){
       let savedPid = null;
       try { 
         const pidStr = localStorage.getItem('user_pid');
-        if (pidStr) savedPid = parseInt(pidStr);
+        if (pidStr && pidStr !== 'null' && pidStr !== 'undefined') {
+          const parsed = parseInt(pidStr);
+          if (!isNaN(parsed) && parsed >= 100 && parsed <= 999) {
+            savedPid = parsed;
+          }
+        }
       } catch {}
       
       const r = await apiFetch('/api/lottery-basic?action=join', { 
@@ -69,12 +74,24 @@ export function useActivityStatus(){
   useEffect(()=>{
     fetchStatus();
     fetchEligibility();
-    // 降低轮询频率到3秒，避免过于频繁的API调用
-    const tick = async () => { await fetchStatus(); await fetchEligibility(); };
-    const t = setInterval(tick, 3000);
-    const onVis = () => { if (document.visibilityState === 'visible') { tick(); } };
+    // 将状态轮询间隔增加到5秒，减少API调用
+    const statusInterval = setInterval(fetchStatus, 5000);
+    // eligibility检查间隔更长，避免频繁的join API调用
+    const eligibilityInterval = setInterval(fetchEligibility, 10000);
+    
+    const onVis = () => { 
+      if (document.visibilityState === 'visible') { 
+        fetchStatus(); 
+        // 页面重新激活时才检查eligibility
+        fetchEligibility();
+      } 
+    };
     document.addEventListener('visibilitychange', onVis);
-    return ()=>{ clearInterval(t); document.removeEventListener('visibilitychange', onVis); };
+    return ()=>{ 
+      clearInterval(statusInterval); 
+      clearInterval(eligibilityInterval);
+      document.removeEventListener('visibilitychange', onVis); 
+    };
   },[fetchStatus, fetchEligibility]);
 
   return { status, canDraw: status==='start' && !already, refresh: fetchStatus, markAlready:()=>setAlready(true), resetAlready:()=>setAlready(false) };

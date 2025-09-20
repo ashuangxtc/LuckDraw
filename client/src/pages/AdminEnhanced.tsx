@@ -45,25 +45,15 @@ export default function AdminEnhanced() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // 使用模拟数据，避免API调用失败
-      const mockData = {
-        total: 0,
-        items: [],
-        stats: {
-          total: 0,
-          participated: 0,
-          winners: 0,
-          pending: 0
-        },
-        config: {
-          hongzhongPercent: 33
-        }
-      };
-
-      console.log('使用模拟数据:', mockData)
-      setData(mockData)
-      setStats(mockData.stats)
-      setHongzhongPercent([mockData.config.hongzhongPercent])
+      // 获取真实的参与者和状态数据
+      const participantsRes = await fetch('/api/admin-basic?action=participants', { 
+        credentials: 'include' 
+      }).then(r => r.json());
+      
+      console.log('参与者数据:', participantsRes);
+      setData(participantsRes)
+      setStats(participantsRes.stats)
+      setHongzhongPercent([participantsRes.config.hongzhongPercent])
       setConnected(true)
     } catch (error) {
       console.error('加载数据失败:', error)

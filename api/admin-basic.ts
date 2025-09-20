@@ -1,5 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// 共享状态存储
+let currentState: 'waiting' | 'open' | 'closed' = 'waiting';
+let currentConfig = {
+  hongzhongPercent: 33,
+  redCountMode: 1
+};
+
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
   const action = query.action as string;
@@ -47,7 +54,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // 设置状态（简化版）
+  // 设置状态
   if (method === 'POST' && action === 'set-state') {
     const cookies = req.headers.cookie || '';
     const isLoggedIn = cookies.includes('admin_logged_in=true');
@@ -57,8 +64,13 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     const { state } = req.body || {};
-    console.log('Setting state to:', state);
-    return res.json({ ok: true, message: `State set to ${state}` });
+    if (['waiting', 'open', 'closed'].includes(state)) {
+      currentState = state;
+      console.log('State updated to:', currentState);
+      return res.json({ ok: true, state: currentState });
+    } else {
+      return res.status(400).json({ ok: false, error: 'Invalid state' });
+    }
   }
 
   // 获取参与者列表（模拟数据）
@@ -73,15 +85,14 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({
       total: 0,
       items: [],
+      state: currentState,
       stats: {
         total: 0,
         participated: 0,
         winners: 0,
         pending: 0
       },
-      config: {
-        hongzhongPercent: 33
-      }
+      config: currentConfig
     });
   }
 
@@ -108,16 +119,21 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (method === 'GET') {
-      // 返回默认配置
-      return res.json({
-        hongzhongPercent: 33,
-        redCountMode: 1
-      });
+      // 返回当前配置
+      return res.json(currentConfig);
     } else if (method === 'POST') {
-      // 设置配置
+      // 更新配置
       const { hongzhongPercent, redCountMode } = req.body || {};
-      console.log('Setting config:', { hongzhongPercent, redCountMode });
-      return res.json({ ok: true, message: 'Config updated' });
+      
+      if (typeof hongzhongPercent === 'number' && hongzhongPercent >= 0 && hongzhongPercent <= 100) {
+        currentConfig.hongzhongPercent = hongzhongPercent;
+      }
+      if (typeof redCountMode === 'number' && [0, 1, 2, 3].includes(redCountMode)) {
+        currentConfig.redCountMode = redCountMode;
+      }
+      
+      console.log('Config updated to:', currentConfig);
+      return res.json({ ok: true, config: currentConfig });
     }
   }
 

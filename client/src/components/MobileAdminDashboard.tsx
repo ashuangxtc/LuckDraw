@@ -50,7 +50,7 @@ const MobileAdminDashboard = () => {
   // 检查活动状态
   const checkActivityStatus = async () => {
     try {
-      const response = await fetch('/api/lottery/status');
+      const response = await fetch('/api/lottery-basic?action=status');
       const data = await response.json();
       
       setActivityStatus({

@@ -66,7 +66,7 @@ export default function AdminEnhanced() {
 
   useEffect(() => {
     // 先探测登录态
-    fetch('/api/admin?action=me', { credentials: 'include' })
+    fetch('/api/admin-basic?action=me', { credentials: 'include' })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(() => { setAuthed(true); loadData() })
       .catch(() => setAuthed(false))
@@ -77,7 +77,7 @@ export default function AdminEnhanced() {
   const doLogin = async () => {
     setAuthErr('')
     try{
-      const r = await fetch('/api/admin?action=login', {
+      const r = await fetch('/api/admin-basic?action=login', {
         method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ password: pwd })
       })

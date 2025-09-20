@@ -66,7 +66,7 @@ const MobileAdminDashboard = () => {
   // 获取参与者记录
   const fetchLotteryPlays = async () => {
     try {
-      const response = await fetch('/api/admin?action=participants');
+      const response = await fetch('/api/admin-basic?action=participants');
       
       if (response.ok) {
         const data = await response.json();
@@ -85,7 +85,7 @@ const MobileAdminDashboard = () => {
   // 获取配置
   const fetchConfig = async () => {
     try {
-      const response = await fetch('/api/lottery?action=config');
+      const response = await fetch('/api/admin-basic?action=config');
       if (response.ok) {
         const data = await response.json();
         setConfig(data);
@@ -127,7 +127,7 @@ const MobileAdminDashboard = () => {
   // 开始活动
   const startActivity = async () => {
     try {
-      const response = await fetch('/api/admin?action=set-state', {
+      const response = await fetch('/api/admin-basic?action=set-state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -154,7 +154,7 @@ const MobileAdminDashboard = () => {
   // 暂停活动
   const pauseActivity = async () => {
     try {
-      const response = await fetch('/api/admin?action=set-state', {
+      const response = await fetch('/api/admin-basic?action=set-state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -181,7 +181,7 @@ const MobileAdminDashboard = () => {
   // 结束活动
   const endActivity = async () => {
     try {
-      const response = await fetch('/api/admin?action=set-state', {
+      const response = await fetch('/api/admin-basic?action=set-state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -209,7 +209,7 @@ const MobileAdminDashboard = () => {
   // 重置本轮
   const resetLottery = async () => {
     try {
-      const response = await fetch('/api/admin?action=reset-all', {
+      const response = await fetch('/api/admin-basic?action=reset-all', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -240,7 +240,7 @@ const MobileAdminDashboard = () => {
   const updateConfigRealtime = async (newPercent: number) => {
     try {
       console.log('实时更新配置:', { hongzhongPercent: newPercent });
-      const response = await fetch('/api/lottery?action=config', {
+      const response = await fetch('/api/admin-basic?action=config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -291,7 +291,7 @@ const MobileAdminDashboard = () => {
   // 重置单个用户
   const resetSingleUser = async (pid: number) => {
     try {
-      const response = await fetch(`/api/admin?action=reset&pid=${pid}`, {
+      const response = await fetch(`/api/admin-basic?action=reset&pid=${pid}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

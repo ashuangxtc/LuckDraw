@@ -15,7 +15,7 @@ export default function AdminSimple() {
   const load = async () => {
     setLoading(true)
     try {
-      const r = await fetch('/api/admin?action=participants', { credentials: 'include' })
+      const r = await fetch('/api/admin-basic?action=participants', { credentials: 'include' })
       const d = await r.json()
       setItems(d.items || [])
     } catch (error) {
@@ -31,7 +31,7 @@ export default function AdminSimple() {
 
   const resetOne = async (pid: number) => {
     try {
-      await fetch(`/api/admin?action=reset&pid=${pid}`, { 
+      await fetch(`/api/admin-basic?action=reset&pid=${pid}`, { 
         method: 'POST', 
         credentials: 'include' 
       })
@@ -47,7 +47,7 @@ export default function AdminSimple() {
     }
     
     try {
-      await fetch('/api/admin?action=reset-all', { 
+      await fetch('/api/admin-basic?action=reset-all', { 
         method: 'POST', 
         credentials: 'include' 
       })

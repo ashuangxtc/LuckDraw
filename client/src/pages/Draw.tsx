@@ -101,12 +101,30 @@ export default function DrawPage(){
   useEffect(()=>{
     (async ()=>{
       try {
-        const r = await apiFetch('/api/lottery-basic?action=join',{method:'POST'});
+        // 尝试获取本地保存的PID
+        let savedPid = null;
+        try {
+          savedPid = localStorage.getItem('user_pid');
+          if (savedPid) {
+            savedPid = parseInt(savedPid);
+            setUserPid(savedPid);
+          }
+        } catch {}
+        
+        const r = await apiFetch('/api/lottery-basic?action=join',{
+          method:'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ clientPid: savedPid })
+        });
         if (r.ok) {
           setJoined(true);
           try { 
             const data = await r.json();
-            if (data && data.pid) { setUserPid(data.pid); }
+            if (data && data.pid) { 
+              setUserPid(data.pid);
+              // 保存PID到本地存储
+              try { localStorage.setItem('user_pid', data.pid.toString()); } catch {}
+            }
             if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} }
             if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} }
           } catch {}
@@ -120,7 +138,27 @@ export default function DrawPage(){
   useEffect(()=>{
     (async ()=>{
       if (status==='start' && phase==='idle' && !joined) {
-        try{ const r = await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.pid) { setUserPid(data.pid); } if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} } if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} } } catch {} } }catch{}
+        try{ 
+          let savedPid = null;
+          try { savedPid = parseInt(localStorage.getItem('user_pid') || ''); } catch {}
+          const r = await apiFetch('/api/lottery-basic?action=join',{
+            method:'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ clientPid: savedPid })
+          }); 
+          if(r.ok) { 
+            setJoined(true); 
+            try{ 
+              const data = await r.json(); 
+              if (data && data.pid) { 
+                setUserPid(data.pid); 
+                try { localStorage.setItem('user_pid', data.pid.toString()); } catch {}
+              } 
+              if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} } 
+              if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} } 
+            } catch {} 
+          } 
+        }catch{}
       }
     })();
   },[status, phase, joined]);
@@ -178,7 +216,27 @@ export default function DrawPage(){
   async function handleStart(){
     if(!assetsReady) return; // 等图加载，避免正面未出导致“仍是背面色”
     if(!canDraw || phase!=='idle') return onBlocked();
-    if(!joined){ try{ const r=await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.pid) setUserPid(data.pid); }catch{} } }catch{} }
+    if(!joined){ 
+      try{ 
+        let savedPid = null;
+        try { savedPid = parseInt(localStorage.getItem('user_pid') || ''); } catch {}
+        const r=await apiFetch('/api/lottery-basic?action=join',{
+          method:'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ clientPid: savedPid })
+        }); 
+        if(r.ok) { 
+          setJoined(true); 
+          try{ 
+            const data = await r.json(); 
+            if (data && data.pid) {
+              setUserPid(data.pid);
+              try { localStorage.setItem('user_pid', data.pid.toString()); } catch {}
+            }
+          }catch{} 
+        } 
+      }catch{} 
+    }
     // 保持 won，不在开始时清除；仅后台重置（join 返回 participated=false）时清
     setPhase('staging');
     // 初始化槽位
@@ -213,7 +271,27 @@ export default function DrawPage(){
     if (busy) return;
     setBusy(true);
     setPhase('revealing');
-    if(!joined){ try{ const r=await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.pid) setUserPid(data.pid); }catch{} } }catch{} }
+    if(!joined){ 
+      try{ 
+        let savedPid = null;
+        try { savedPid = parseInt(localStorage.getItem('user_pid') || ''); } catch {}
+        const r=await apiFetch('/api/lottery-basic?action=join',{
+          method:'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ clientPid: savedPid })
+        }); 
+        if(r.ok) { 
+          setJoined(true); 
+          try{ 
+            const data = await r.json(); 
+            if (data && data.pid) {
+              setUserPid(data.pid);
+              try { localStorage.setItem('user_pid', data.pid.toString()); } catch {}
+            }
+          }catch{} 
+        } 
+      }catch{} 
+    }
     const pickIndex = cards.findIndex(c=>c.id===id);
     const res = await apiFetch('/api/lottery-basic?action=draw',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pick: pickIndex })});
     if(!res.ok){

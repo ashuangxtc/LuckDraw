@@ -51,7 +51,27 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 参与抽奖 - POST /api/lottery-basic?action=join
   if (method === 'POST' && action === 'join') {
-    const clientId = req.headers['user-agent'] + req.headers['x-forwarded-for'] || 'anonymous';
+    // 尝试从请求体获取前端提供的PID
+    const { clientPid } = req.body || {};
+    
+    // 如果前端提供了PID，先尝试找到对应的参与者
+    if (clientPid) {
+      const existingParticipant = Object.values(participants).find(p => p.pid === clientPid);
+      if (existingParticipant) {
+        console.log('根据PID找到现有参与者:', { pid: existingParticipant.pid, participated: existingParticipant.participated });
+        return res.json({
+          pid: existingParticipant.pid,
+          participated: existingParticipant.participated,
+          win: existingParticipant.win
+        });
+      }
+    }
+    
+    // 如果没有找到，使用客户端特征作为标识
+    const userAgent = req.headers['user-agent'] || '';
+    const forwardedFor = req.headers['x-forwarded-for'] || '';
+    const realIp = req.headers['x-real-ip'] || '';
+    const clientId = `${userAgent}_${forwardedFor}_${realIp}`.substring(0, 100); // 限制长度
     
     let participant = participants[clientId];
     if (!participant) {
@@ -68,7 +88,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
         joinTime: new Date().toISOString()
       };
       participants[clientId] = participant;
-      console.log('新参与者创建:', { clientId: clientId.slice(0, 20) + '...', pid: participant.pid });
+      console.log('新参与者创建:', { clientId: clientId.slice(0, 30) + '...', pid: participant.pid });
     } else {
       console.log('现有参与者:', { pid: participant.pid, participated: participant.participated });
     }

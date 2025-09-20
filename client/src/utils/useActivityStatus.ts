@@ -31,12 +31,28 @@ export function useActivityStatus(){
   // 轮询当前设备是否已参与（管理员重置后可自动解锁）
   const fetchEligibility = useCallback(async()=>{
     try{
-      const r = await apiFetch('/api/lottery-basic?action=join', { method:'POST' });
+      // 获取本地保存的PID
+      let savedPid = null;
+      try { 
+        const pidStr = localStorage.getItem('user_pid');
+        if (pidStr) savedPid = parseInt(pidStr);
+      } catch {}
+      
+      const r = await apiFetch('/api/lottery-basic?action=join', { 
+        method:'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ clientPid: savedPid })
+      });
       if (r.ok) {
         const j = await r.json();
         // participated === true 则已参与；false 则可再次抽
         const wasParticipated = !!j?.participated;
         setAlready(wasParticipated);
+        
+        // 保存PID
+        if (j?.pid) {
+          try { localStorage.setItem('user_pid', j.pid.toString()); } catch {}
+        }
         
         // 如果服务端显示未参与，清除本地中奖状态
         if (!wasParticipated) {

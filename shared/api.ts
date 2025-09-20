@@ -12,7 +12,7 @@ export type Participant = {
 }
 
 export async function join(base = config.apiBase): Promise<JoinResp> {
-  const r = await fetch(`${base}/api/lottery/join`, { 
+  const r = await fetch(`${base}/api/lottery?action=join`, { 
     method: 'POST', 
     credentials: 'include' 
   })
@@ -21,7 +21,7 @@ export async function join(base = config.apiBase): Promise<JoinResp> {
 }
 
 export async function draw(choice: number, base = config.apiBase): Promise<DrawResp> {
-  const r = await fetch(`${base}/api/lottery/draw`, {
+  const r = await fetch(`${base}/api/lottery?action=draw`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -32,7 +32,7 @@ export async function draw(choice: number, base = config.apiBase): Promise<DrawR
 }
 
 export async function getParticipants(base = config.apiBase) {
-  const r = await fetch(`${base}/api/admin/participants`, { 
+  const r = await fetch(`${base}/api/admin?action=participants`, { 
     credentials: 'include' 
   })
   if (!r.ok) throw new Error('get participants failed')
@@ -40,7 +40,7 @@ export async function getParticipants(base = config.apiBase) {
 }
 
 export async function resetParticipant(pid: number, base = config.apiBase) {
-  const r = await fetch(`${base}/api/admin/reset/${pid}`, { 
+  const r = await fetch(`${base}/api/admin?action=reset&pid=${pid}`, { 
     method: 'POST', 
     credentials: 'include' 
   })
@@ -49,7 +49,7 @@ export async function resetParticipant(pid: number, base = config.apiBase) {
 }
 
 export async function resetAll(base = config.apiBase) {
-  const r = await fetch(`${base}/api/admin/reset-all`, { 
+  const r = await fetch(`${base}/api/admin?action=reset-all`, { 
     method: 'POST', 
     credentials: 'include' 
   })
@@ -64,7 +64,7 @@ export async function health(base = config.apiBase) {
 }
 
 export async function getGameStatus(base = config.apiBase) {
-  const url = base ? `${base}/api/lottery/status` : '/api/lottery/status'
+  const url = base ? `${base}/api/lottery?action=status` : '/api/lottery?action=status'
   const r = await fetch(url, { credentials: 'include' })
   if (!r.ok) throw new Error('get game status failed')
   return r.json()
@@ -72,7 +72,7 @@ export async function getGameStatus(base = config.apiBase) {
 
 // 新API: 发牌
 export async function deal(base = config.apiBase): Promise<{ roundId: string; faces: ('zhong'|'blank')[] }> {
-  const url = base ? `${base}/api/lottery/deal` : '/api/lottery/deal'
+  const url = base ? `${base}/api/lottery?action=deal` : '/api/lottery?action=deal'
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,7 +84,7 @@ export async function deal(base = config.apiBase): Promise<{ roundId: string; fa
 
 // 新API: 选牌
 export async function pick(roundId: string, index: number, base = config.apiBase): Promise<{ win: boolean; face: 'zhong'|'blank'; faces: ('zhong'|'blank')[] }> {
-  const url = base ? `${base}/api/lottery/pick` : '/api/lottery/pick'
+  const url = base ? `${base}/api/lottery?action=pick` : '/api/lottery?action=pick'
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -97,7 +97,7 @@ export async function pick(roundId: string, index: number, base = config.apiBase
 
 // 新API: 设置概率 (0-1)
 export async function setWinRate(winRate: number, base = config.apiBase): Promise<{ ok: boolean; winRate: number }> {
-  const url = base ? `${base}/api/lottery/config` : '/api/lottery/config'
+  const url = base ? `${base}/api/lottery?action=config` : '/api/lottery?action=config'
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -114,7 +114,7 @@ export async function getArrangement(base = config.apiBase) {
 }
 
 export async function setGameState(state: 'waiting' | 'open' | 'closed', base = config.apiBase) {
-  const url = base ? `${base}/api/admin/set-state` : '/api/admin/set-state'
+  const url = base ? `${base}/api/admin?action=set-state` : '/api/admin?action=set-state'
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -127,7 +127,7 @@ export async function setGameState(state: 'waiting' | 'open' | 'closed', base = 
 
 // 管理员登录
 export async function adminLogin(password: string, base = config.apiBase) {
-  const url = base ? `${base}/api/admin/login` : '/api/admin/login'
+  const url = base ? `${base}/api/admin?action=login` : '/api/admin?action=login'
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -140,7 +140,7 @@ export async function adminLogin(password: string, base = config.apiBase) {
 
 // 管理员登出
 export async function adminLogout(base = config.apiBase) {
-  const url = base ? `${base}/api/admin/logout` : '/api/admin/logout'
+  const url = base ? `${base}/api/admin?action=logout` : '/api/admin?action=logout'
   const r = await fetch(url, {
     method: 'POST',
     credentials: 'include'
@@ -151,7 +151,7 @@ export async function adminLogout(base = config.apiBase) {
 
 // 获取管理员状态
 export async function getAdminStatus(base = config.apiBase) {
-  const url = base ? `${base}/api/admin/me` : '/api/admin/me'
+  const url = base ? `${base}/api/admin?action=me` : '/api/admin?action=me'
   const r = await fetch(url, {
     credentials: 'include'
   })
@@ -161,7 +161,7 @@ export async function getAdminStatus(base = config.apiBase) {
 
 // 设置红中张数
 export async function setRedCountMode(redCountMode: number, base = config.apiBase) {
-  const url = base ? `${base}/api/lottery/config` : '/api/lottery/config'
+  const url = base ? `${base}/api/lottery?action=config` : '/api/lottery?action=config'
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -174,7 +174,7 @@ export async function setRedCountMode(redCountMode: number, base = config.apiBas
 
 // 获取配置
 export async function getConfig(base = config.apiBase) {
-  const url = base ? `${base}/api/lottery/config` : '/api/lottery/config'
+  const url = base ? `${base}/api/lottery?action=config` : '/api/lottery?action=config'
   const r = await fetch(url, {
     credentials: 'include'
   })

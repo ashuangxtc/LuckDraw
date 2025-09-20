@@ -66,7 +66,7 @@ export default function AdminEnhanced() {
 
   useEffect(() => {
     // 先探测登录态
-    fetch('/api/admin/me', { credentials: 'include' })
+    fetch('/api/admin?action=me', { credentials: 'include' })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(() => { setAuthed(true); loadData() })
       .catch(() => setAuthed(false))
@@ -77,7 +77,7 @@ export default function AdminEnhanced() {
   const doLogin = async () => {
     setAuthErr('')
     try{
-      const r = await fetch('/api/admin/login', {
+      const r = await fetch('/api/admin?action=login', {
         method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ password: pwd })
       })
@@ -91,7 +91,7 @@ export default function AdminEnhanced() {
   // 设置活动状态
   const setState = async (state: 'waiting' | 'open' | 'closed') => {
     try {
-      const response = await fetch('/api/admin/set-state', {
+      const response = await fetch('/api/admin?action=set-state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

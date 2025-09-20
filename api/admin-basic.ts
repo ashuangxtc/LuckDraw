@@ -7,7 +7,7 @@ let currentConfig = {
   redCountMode: 1
 };
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
   const action = query.action as string;
 
@@ -108,25 +108,13 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ ok: false, error: 'Not authenticated' });
     }
 
-    // 真正清除所有数据
+    // 清除admin数据
     Object.keys(participants).forEach(key => delete participants[key]);
     currentState = 'waiting';
     currentConfig = { hongzhongPercent: 50 };
     
-    // 同步重置到 lottery-basic
-    try {
-      const protocol = req.headers['x-forwarded-proto'] || 'https';
-      const host = req.headers.host;
-      await fetch(`${protocol}://${host}/api/lottery-basic?action=reset-all`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } catch (error) {
-      console.error('Failed to sync reset to lottery-basic:', error);
-    }
-    
-    console.log('All data reset - participants cleared, state reset to waiting');
-    return res.json({ ok: true, message: 'All data reset successfully' });
+    console.log('Admin data reset completed');
+    return res.json({ ok: true, message: 'Data reset successfully' });
   }
 
   // 配置管理（模拟）

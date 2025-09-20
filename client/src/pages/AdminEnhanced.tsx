@@ -392,28 +392,26 @@ export default function AdminEnhanced() {
               <table className="w-full text-xs md:text-sm">
                 <thead className="sticky top-0 bg-gray-50">
                   <tr className="border-b">
-                    <th className="text-left py-2 md:py-3 px-3 md:px-4 font-medium">PID</th>
-                    <th className="text-left py-2 md:py-3 px-3 md:px-4 font-medium">ID</th>
+                    <th className="text-left py-2 md:py-3 px-3 md:px-4 font-medium">参与者 ID</th>
                     <th className="text-left py-2 md:py-3 px-3 md:px-4 font-medium min-w-20 md:min-w-20 whitespace-nowrap">状态</th>
                     <th className="text-left py-2 md:py-3 px-3 md:px-4 font-medium min-w-24 md:min-w-24 whitespace-nowrap">结果</th>
-                    <th className="text-left py-2 md:py-3 px-3 md:px-4 font-medium">抽取时间</th>
+                    <th className="text-left py-2 md:py-3 px-3 md:px-4 font-medium">参与时间</th>
                     <th className="text-left py-2 md:py-3 px-3 md:px-4 font-medium w-16 md:w-20">操作</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-gray-500">加载中...</td>
+                      <td colSpan={5} className="text-center py-8 text-gray-500">加载中...</td>
                     </tr>
                   ) : !data?.items?.length ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-gray-500">暂无参与者</td>
+                      <td colSpan={5} className="text-center py-8 text-gray-500">暂无参与者</td>
                     </tr>
                   ) : (
                     data.items.map((item) => (
                       <tr key={item.pid} className="border-b hover:bg-gray-50">
-                        <td className="py-2 md:py-3 px-3 md:px-4 font-mono text-blue-600">{item.pid}</td>
-                        <td className="py-2 md:py-3 px-3 md:px-4 font-mono text-gray-700">{item.clientIdShort3 ?? '-'}</td>
+                        <td className="py-2 md:py-3 px-3 md:px-4 font-mono text-blue-600">#{item.pid}</td>
                         <td className="py-2 md:py-3 px-3 md:px-4 min-w-20 md:min-w-20 whitespace-nowrap">
                           <span className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${ item.participated ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' }`}>
                             {item.participated ? '已参与' : '未参与'}
@@ -428,7 +426,7 @@ export default function AdminEnhanced() {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="py-2 md:py-3 px-3 md:px-4 text-gray-600">{formatTime(item.drawAt)}</td>
+                        <td className="py-2 md:py-3 px-3 md:px-4 text-gray-600">{item.joinTime ? new Date(item.joinTime).toLocaleString('zh-CN') : '-'}</td>
                         <td className="py-2 md:py-3 px-3 md:px-4 w-16 md:w-20">
                           <Button onClick={() => resetOne(item.pid)} variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">重置</Button>
                         </td>

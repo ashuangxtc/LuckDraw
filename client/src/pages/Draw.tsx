@@ -27,6 +27,7 @@ export default function DrawPage(){
   const [toast, setToast] = useState<string>('');
   const [assetsReady, setAssetsReady] = useState(false);
   const [won, setWon] = useState(false);
+  const [userPid, setUserPid] = useState<number | null>(null);
   // 首次进入时，从本地恢复"已中奖"标记（仅用于按钮状态展示）
   useEffect(()=>{
     try { if (localStorage.getItem('dm_won') === '1') setWon(true); } catch {}
@@ -105,6 +106,7 @@ export default function DrawPage(){
           setJoined(true);
           try { 
             const data = await r.json();
+            if (data && data.pid) { setUserPid(data.pid); }
             if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} }
             if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} }
           } catch {}
@@ -118,7 +120,7 @@ export default function DrawPage(){
   useEffect(()=>{
     (async ()=>{
       if (status==='start' && phase==='idle' && !joined) {
-        try{ const r = await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} } if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} } } catch {} } }catch{}
+        try{ const r = await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.pid) { setUserPid(data.pid); } if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} } if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} } } catch {} } }catch{}
       }
     })();
   },[status, phase, joined]);
@@ -176,7 +178,7 @@ export default function DrawPage(){
   async function handleStart(){
     if(!assetsReady) return; // 等图加载，避免正面未出导致“仍是背面色”
     if(!canDraw || phase!=='idle') return onBlocked();
-    if(!joined){ try{ const r=await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) setJoined(true);}catch{} }
+    if(!joined){ try{ const r=await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.pid) setUserPid(data.pid); }catch{} } }catch{} }
     // 保持 won，不在开始时清除；仅后台重置（join 返回 participated=false）时清
     setPhase('staging');
     // 初始化槽位
@@ -206,7 +208,7 @@ export default function DrawPage(){
     if (busy) return;
     setBusy(true);
     setPhase('revealing');
-    if(!joined){ try{ const r=await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) setJoined(true);}catch{} }
+    if(!joined){ try{ const r=await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.pid) setUserPid(data.pid); }catch{} } }catch{} }
     const pickIndex = cards.findIndex(c=>c.id===id);
     const res = await apiFetch('/api/lottery-basic?action=draw',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pick: pickIndex })});
     if(!res.ok){
@@ -314,7 +316,7 @@ export default function DrawPage(){
                 alt="back"
                 draggable={false}
                 style={{ position:'absolute', inset:0 as any, width:'100%', height:'100%', objectFit:'cover', borderRadius:18 as any,
-                  backfaceVisibility:'visible' as any, WebkitBackfaceVisibility:'visible' as any,
+                  backfaceVisibility:'hidden' as any, WebkitBackfaceVisibility:'hidden' as any,
                   transform:'rotateY(0deg) translateZ(0.01px)',
                   opacity: c.flipped ? 0 : 1, zIndex:1 as any }}
                 src={(won ? (resolvedWin ?? winUrl) : (resolvedBack ?? backUrl))}
@@ -323,15 +325,15 @@ export default function DrawPage(){
                 alt={c.face==='hongzhong' ? 'red' : 'white'}
                 draggable={false}
                 style={{ position:'absolute', inset:0 as any, width:'100%', height:'100%', objectFit:'cover', borderRadius:18 as any,
-                  backfaceVisibility:'visible' as any, WebkitBackfaceVisibility:'visible' as any,
-                  transform:'rotateY(180deg) scaleX(-1) translateZ(0.01px)', backgroundColor:'#fff',
+                  backfaceVisibility:'hidden' as any, WebkitBackfaceVisibility:'hidden' as any,
+                  transform:'rotateY(180deg) translateZ(0.01px)', backgroundColor:'#fff',
                   opacity: c.flipped ? 1 : 0, zIndex:2 as any }}
                 src={c.face==='hongzhong' ? (resolvedRed ?? redUrl) : (resolvedWhite ?? whiteUrl)}
               />
             </button>
           ))}
                   </div>
-        <div className="dm-device-id-watermark">ID {shortId(cid)}</div>
+        <div className="dm-device-id-watermark">ID {userPid || shortId(cid)}</div>
         <div className="dm-cta-inline">
           <button
             className={`dm-btn watermark ${won ? 'winner' : ''}`}

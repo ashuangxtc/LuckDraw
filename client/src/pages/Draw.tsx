@@ -188,7 +188,12 @@ export default function DrawPage(){
     // 使用不依赖外部样式的图像资源，保证一定能翻
     // 预演：随机一红两白
     const preview = makePreviewDeckOneRed();
-    setCards(cs => cs.map((c, idx) => ({...c, face: preview[idx], flipped:true})));
+    console.log('预览牌面:', preview);
+    setCards(cs => cs.map((c, idx) => {
+      const newCard = {...c, face: preview[idx], flipped:true};
+      console.log(`卡片${idx}:`, newCard);
+      return newCard;
+    }));
     await sleep(600);
     setCards(cs => cs.map(c => ({...c, flipped:false})));
     await sleep(600);

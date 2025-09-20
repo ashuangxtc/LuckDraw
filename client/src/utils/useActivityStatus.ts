@@ -53,8 +53,9 @@ export function useActivityStatus(){
   useEffect(()=>{
     fetchStatus();
     fetchEligibility();
+    // 降低轮询频率到3秒，避免过于频繁的API调用
     const tick = async () => { await fetchStatus(); await fetchEligibility(); };
-    const t = setInterval(tick, 1000);
+    const t = setInterval(tick, 3000);
     const onVis = () => { if (document.visibilityState === 'visible') { tick(); } };
     document.addEventListener('visibilitychange', onVis);
     return ()=>{ clearInterval(t); document.removeEventListener('visibilitychange', onVis); };

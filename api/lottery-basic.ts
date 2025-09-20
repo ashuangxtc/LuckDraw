@@ -55,13 +55,19 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     
     let participant = participants[clientId];
     if (!participant) {
+      // 使用时间戳+随机数确保PID唯一且不重复
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 1000);
       participant = {
-        pid: Math.floor(Math.random() * 10000),
+        pid: parseInt(`${timestamp.toString().slice(-4)}${random.toString().padStart(3, '0')}`),
         participated: false,
         win: false,
         joinTime: new Date().toISOString()
       };
       participants[clientId] = participant;
+      console.log('新参与者创建:', { clientId: clientId.slice(0, 20) + '...', pid: participant.pid });
+    } else {
+      console.log('现有参与者:', { pid: participant.pid, participated: participant.participated });
     }
     
     return res.json({
@@ -73,7 +79,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 抽奖 - POST /api/lottery-basic?action=draw
   if (method === 'POST' && action === 'draw') {
+    console.log('抽奖请求 - 当前状态:', currentState);
+    
     if (currentState !== 'open') {
+      console.log('活动未开放，拒绝抽奖');
       return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN', state: currentState });
     }
 

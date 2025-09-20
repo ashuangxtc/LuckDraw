@@ -18,8 +18,14 @@ export function useActivityStatus(){
   const fetchStatus = useCallback(async()=>{
     try{
       const data = await apiFetch('/api/state-sync').then(r=>r.json());
-      setStatus(map(data?.state||data?.status));
-    }catch{ setStatus('none'); }
+      console.log('状态查询结果:', data);
+      const newStatus = map(data?.state||data?.status);
+      console.log('映射后状态:', newStatus);
+      setStatus(newStatus);
+    }catch(e){ 
+      console.error('状态查询失败:', e);
+      setStatus('none'); 
+    }
   },[]);
 
   // 轮询当前设备是否已参与（管理员重置后可自动解锁）

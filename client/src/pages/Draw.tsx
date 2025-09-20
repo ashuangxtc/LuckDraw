@@ -12,6 +12,11 @@ type Face = 'hongzhong'|'baiban';
 export default function DrawPage(){
   const cid = getClientId();
   const { status, canDraw, refresh, markAlready } = useActivityStatus();
+  
+  // 调试状态
+  useEffect(() => {
+    console.log('Draw页面状态:', { status, canDraw });
+  }, [status, canDraw]);
   const { cards, setCards, revealCardByDeck, initSlotsFromLayout, layoutToSlots, overlapCenter, shuffleBySlots } = useMahjongAnim('#mahjong-board');
   const [joined, setJoined] = useState(false);
   const [pickedId, setPickedId] = useState<string|undefined>(undefined);

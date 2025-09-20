@@ -45,23 +45,23 @@ export default function AdminEnhanced() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // 获取真实参与者数据和状态（统一从lottery-basic获取）
-      const participantsRes = await fetch('/api/lottery-basic?action=participants').then(r => r.json());
+      // 只使用lottery-basic作为数据源，避免冲突
       const statusRes = await fetch('/api/lottery-basic?action=status').then(r => r.json());
       
-      console.log('参与者数据:', participantsRes);
       console.log('状态数据:', statusRes);
       
-      // 合并数据
+      // 使用状态数据
       const mergedData = {
-        ...participantsRes,
+        ok: true,
+        participants: [], // 暂时为空，避免复杂的参与者获取
+        stats: statusRes.stats || { total: 0, participated: 0, winners: 0 },
         state: statusRes.state,
         config: statusRes.config
       };
       
       setData(mergedData)
-      setStats(participantsRes.stats)
-      setHongzhongPercent([statusRes.config.hongzhongPercent])
+      setStats(statusRes.stats || { total: 0, participated: 0, winners: 0 })
+      setHongzhongPercent([statusRes.config?.hongzhongPercent || 33])
       setConnected(true)
     } catch (error) {
       console.error('加载数据失败:', error)
@@ -77,7 +77,7 @@ export default function AdminEnhanced() {
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(() => { setAuthed(true); loadData() })
       .catch(() => setAuthed(false))
-    const interval = setInterval(() => { if (authed) loadData() }, 5000)
+    const interval = setInterval(() => { if (authed) loadData() }, 10000) // 减少到10秒
     return () => clearInterval(interval)
   }, [authed])
 

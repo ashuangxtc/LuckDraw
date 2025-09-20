@@ -75,15 +75,18 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   // 设置游戏状态 - POST /api/lottery-basic?action=set-state
   if (method === 'POST' && action === 'set-state') {
     const { state } = req.body || {};
+    console.log('Set-state request received:', { state, currentState });
     if (state && ['waiting', 'open', 'closed'].includes(state)) {
+      const oldState = currentState;
       currentState = state;
-      console.log('Lottery state updated to:', state);
+      console.log('Lottery state changed:', { from: oldState, to: state, timestamp: new Date().toISOString() });
       return res.json({
         ok: true,
         state: currentState,
         timestamp: new Date().toISOString()
       });
     }
+    console.log('Invalid state requested:', state);
     return res.status(400).json({ error: 'Invalid state' });
   }
 
@@ -343,6 +346,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 重置所有数据 - POST /api/lottery-basic?action=reset-all  
   if (method === 'POST' && action === 'reset-all') {
+    console.log('RESET-ALL triggered! Current state was:', currentState);
+    console.log('Request origin:', req.headers['user-agent'], req.headers['referer']);
+    
     // 清除所有参与者数据
     Object.keys(participants).forEach(key => delete participants[key]);
     currentState = 'waiting';

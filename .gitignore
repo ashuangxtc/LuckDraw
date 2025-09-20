@@ -5,3 +5,4 @@ dist/
 .env.production.local
 .env.development.local
 .vercel
+server-backup/

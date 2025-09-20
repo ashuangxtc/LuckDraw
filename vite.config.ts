@@ -19,8 +19,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8080',
-        changeOrigin: true
+        target: 'https://luck-draw-nine.vercel.app', // 指向Vercel部署的API
+        changeOrigin: true,
+        secure: true
       }
     }
   },

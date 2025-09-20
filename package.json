@@ -6,14 +6,11 @@
   "scripts": {
     "kill:ports": "npx kill-port 8080 5173",
     "dev": "npm run dev:web",
-    "dev:web": "npm run kill:ports && concurrently \"npm run dev:server\" \"wait-on http-get://localhost:8080/api/health && npm run dev:client && wait-on http-get://localhost:5173\"",
-    "dev:miniapp": "npm run kill:ports && concurrently \"npm run dev:server\" \"wait-on tcp:8080 && npm run mini:weapp\" --names \"server,weapp\" --prefix-colors \"blue,magenta\"",
-    "dev:server": "cross-env NODE_ENV=development tsx watch server/index.ts",
+    "dev:web": "npm run dev:client",
     "dev:client": "vite --config vite.config.ts",
     "mini:weapp": "npm --prefix miniapp run dev:weapp",
     "build:weapp": "npm --prefix miniapp run build:weapp",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "start": "cross-env NODE_ENV=production node dist/index.js",
+    "build": "vite build",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },

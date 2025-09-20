@@ -76,15 +76,28 @@ export default function AdminEnhanced() {
   const doLogin = async () => {
     setAuthErr('')
     try{
+      console.log('尝试登录，密码:', pwd)
       const r = await fetch('/api/admin-basic?action=login', {
         method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ password: pwd })
       })
-      if(!r.ok){ const t = await r.text(); throw new Error(t || 'login failed') }
+      console.log('登录响应状态:', r.status)
+      
+      if(!r.ok){ 
+        const t = await r.text(); 
+        console.log('登录失败响应:', t)
+        throw new Error(t || 'login failed') 
+      }
+      
+      const result = await r.json()
+      console.log('登录成功响应:', result)
       setAuthed(true)
       setPwd('')
       loadData()
-    }catch(e:any){ setAuthErr('登录失败，请检查密码或服务器'); }
+    }catch(e:any){ 
+      console.error('登录错误:', e)
+      setAuthErr(`登录失败: ${e.message || '请检查密码或服务器'}`); 
+    }
   }
 
   // 设置活动状态

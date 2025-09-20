@@ -27,9 +27,18 @@ export default function DrawPage(){
   const [toast, setToast] = useState<string>('');
   const [assetsReady, setAssetsReady] = useState(false);
   const [won, setWon] = useState(false);
-  // 首次进入时，从本地恢复“已中奖”标记（仅用于按钮状态展示）
+  // 首次进入时，从本地恢复"已中奖"标记（仅用于按钮状态展示）
   useEffect(()=>{
     try { if (localStorage.getItem('dm_won') === '1') setWon(true); } catch {}
+    
+    // 监听重置事件
+    const handleResetWin = () => {
+      setWon(false);
+      console.log('中奖状态已重置');
+    };
+    
+    window.addEventListener('resetWinState', handleResetWin);
+    return () => window.removeEventListener('resetWinState', handleResetWin);
   },[]);
   const [resolvedBack, setResolvedBack] = useState<string | null>(null);
   const [resolvedRed, setResolvedRed] = useState<string | null>(null);

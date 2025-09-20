@@ -45,15 +45,25 @@ export default function AdminEnhanced() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // 获取真实的参与者和状态数据
-      const participantsRes = await fetch('/api/admin-basic?action=participants', { 
-        credentials: 'include' 
-      }).then(r => r.json());
+      // 获取真实参与者数据
+      const participantsRes = await fetch('/api/lottery-basic?action=participants').then(r => r.json());
+      
+      // 获取最新状态
+      const stateRes = await fetch('/api/state-sync').then(r => r.json());
       
       console.log('参与者数据:', participantsRes);
-      setData(participantsRes)
+      console.log('状态数据:', stateRes);
+      
+      // 合并数据，以state-sync的状态为准
+      const mergedData = {
+        ...participantsRes,
+        state: stateRes.state,
+        config: stateRes.config
+      };
+      
+      setData(mergedData)
       setStats(participantsRes.stats)
-      setHongzhongPercent([participantsRes.config.hongzhongPercent])
+      setHongzhongPercent([stateRes.config.hongzhongPercent])
       setConnected(true)
     } catch (error) {
       console.error('加载数据失败:', error)
@@ -144,8 +154,11 @@ export default function AdminEnhanced() {
   // 重置单个参与者
   const resetOne = async (pid: number) => {
     try {
-      const result = await resetParticipant(pid)
-      console.log('重置结果:', result)
+      await fetch('/api/lottery-basic?action=reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pid })
+      })
       await loadData()
       alert(`参与者 #${pid} 已重置`)
     } catch (error) {
@@ -160,7 +173,11 @@ export default function AdminEnhanced() {
       return
     }
     try {
-      await resetAll()
+      await fetch('/api/lottery-basic?action=reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
       await loadData()
     } catch (error) {
       console.error('重置所有参与者失败:', error)

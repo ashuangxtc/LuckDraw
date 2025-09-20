@@ -7,6 +7,14 @@ let currentConfig = {
   redCountMode: 1
 };
 
+// 参与者记录
+let participants: Record<string, {
+  pid: number;
+  participated: boolean;
+  win: boolean;
+  joinTime: string;
+}> = {};
+
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
   const action = query.action as string;
@@ -43,10 +51,23 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   // 参与抽奖 - POST /api/lottery-basic?action=join
   if (method === 'POST' && action === 'join') {
+    const clientId = req.headers['user-agent'] + req.headers['x-forwarded-for'] || 'anonymous';
+    
+    let participant = participants[clientId];
+    if (!participant) {
+      participant = {
+        pid: Math.floor(Math.random() * 10000),
+        participated: false,
+        win: false,
+        joinTime: new Date().toISOString()
+      };
+      participants[clientId] = participant;
+    }
+    
     return res.json({
-      pid: Math.floor(Math.random() * 1000),
-      participated: false,
-      win: false
+      pid: participant.pid,
+      participated: participant.participated,
+      win: participant.win
     });
   }
 
@@ -56,12 +77,34 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'ACTIVITY_NOT_OPEN', state: currentState });
     }
 
+    const clientId = req.headers['user-agent'] + req.headers['x-forwarded-for'] || 'anonymous';
+    let participant = participants[clientId];
+    
+    // 检查是否已经参与
+    if (participant && participant.participated) {
+      return res.status(409).json({ error: 'ALREADY_PARTICIPATED' });
+    }
+    
     const pick = req.body?.pick || 0;
     const win = Math.random() < (currentConfig.hongzhongPercent / 100);
     
+    // 更新参与状态
+    if (!participant) {
+      participant = {
+        pid: Math.floor(Math.random() * 10000),
+        participated: true,
+        win: win,
+        joinTime: new Date().toISOString()
+      };
+      participants[clientId] = participant;
+    } else {
+      participant.participated = true;
+      participant.win = win;
+    }
+    
     return res.json({
       ok: true,
-      pid: Math.floor(Math.random() * 1000),
+      pid: participant.pid,
       win,
       isWinner: win,
       label: win ? '红中' : '白板',
@@ -103,6 +146,45 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       arrangement: ['back', 'back', 'back']
     });
+  }
+
+  // 获取参与者列表 - GET /api/lottery-basic?action=participants
+  if (method === 'GET' && action === 'participants') {
+    const participantList = Object.values(participants).map(p => ({
+      pid: p.pid,
+      participated: p.participated,
+      win: p.win,
+      joinTime: p.joinTime,
+      status: p.win ? '已中奖' : p.participated ? '已参与' : '未参与'
+    }));
+    
+    return res.json({
+      total: participantList.length,
+      items: participantList,
+      stats: {
+        total: participantList.length,
+        participated: participantList.filter(p => p.participated).length,
+        winners: participantList.filter(p => p.win).length,
+        pending: participantList.filter(p => !p.participated).length
+      }
+    });
+  }
+
+  // 重置参与者 - POST /api/lottery-basic?action=reset
+  if (method === 'POST' && action === 'reset') {
+    const { pid } = req.body || {};
+    if (pid) {
+      // 重置特定参与者
+      const participant = Object.values(participants).find(p => p.pid === pid);
+      if (participant) {
+        participant.participated = false;
+        participant.win = false;
+      }
+    } else {
+      // 重置所有参与者
+      participants = {};
+    }
+    return res.json({ ok: true });
   }
 
   // 同步状态 - POST /api/lottery-basic?action=sync-state

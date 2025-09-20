@@ -35,7 +35,17 @@ export function useActivityStatus(){
       if (r.ok) {
         const j = await r.json();
         // participated === true 则已参与；false 则可再次抽
-        setAlready(!!j?.participated);
+        const wasParticipated = !!j?.participated;
+        setAlready(wasParticipated);
+        
+        // 如果服务端显示未参与，清除本地中奖状态
+        if (!wasParticipated) {
+          try { 
+            localStorage.removeItem('dm_won'); 
+            // 通知其他组件重置中奖状态
+            window.dispatchEvent(new CustomEvent('resetWinState'));
+          } catch {}
+        }
       }
     }catch{/* noop */}
   },[]);

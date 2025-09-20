@@ -98,7 +98,7 @@ const ShufflingLotteryGame = () => {
       if (!selectedTile) return;
 
       // 调用后端API
-      const response = await fetch('/api/lottery/draw', {
+      const response = await fetch('/api/lottery-basic?action=draw', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

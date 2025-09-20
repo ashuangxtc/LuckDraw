@@ -33,7 +33,7 @@ export default function ShuffleDeck({ size = 120, onResult }: ShuffleDeckProps) 
 
     try {
       // 向后端申请本轮真实牌面
-      const deal = await fetch("/api/lottery/deal", { 
+      const deal = await fetch("/api/lottery-basic?action=deal", { 
         method: "POST",
         credentials: 'include'
       }).then(r => r.json());
@@ -91,7 +91,7 @@ export default function ShuffleDeck({ size = 120, onResult }: ShuffleDeckProps) 
     setFlipped(prev => prev.map((v, idx) => (idx === i ? true : v)));
 
     try {
-      const result = await fetch("/api/lottery/pick", {
+      const result = await fetch("/api/lottery-basic?action=pick", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',

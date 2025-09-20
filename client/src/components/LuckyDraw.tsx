@@ -34,7 +34,7 @@ export default function LuckyDraw() {
     }).catch(console.error)
 
     // 从后端获取真实的牌面排列
-    fetch('/api/lottery/arrangement', { credentials: 'include' })
+    fetch('/api/lottery-basic?action=arrangement', { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
         const faces = data.faces || ['白板', '红中', '白板']
@@ -96,7 +96,7 @@ export default function LuckyDraw() {
     setWin(isWin)
 
     // 通知后端记录结果，传递选中的索引
-    const resp = await fetch('/api/lottery/draw', {
+    const resp = await fetch('/api/lottery-basic?action=draw', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

@@ -1,11 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-// 共享状态存储
-let currentState: 'waiting' | 'open' | 'closed' = 'waiting';
-let currentConfig = {
-  hongzhongPercent: 33,
-  redCountMode: 1
-};
+import { updateState, updateConfig, getState, getConfig } from './_shared/state';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
@@ -65,9 +59,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     
     const { state } = req.body || {};
     if (['waiting', 'open', 'closed'].includes(state)) {
-      currentState = state;
-      console.log('State updated to:', currentState);
-      return res.json({ ok: true, state: currentState });
+      const newState = updateState(state);
+      console.log('State updated to:', newState);
+      return res.json({ ok: true, state: newState });
     } else {
       return res.status(400).json({ ok: false, error: 'Invalid state' });
     }
@@ -85,14 +79,14 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({
       total: 0,
       items: [],
-      state: currentState,
+      state: getState(),
       stats: {
         total: 0,
         participated: 0,
         winners: 0,
         pending: 0
       },
-      config: currentConfig
+      config: getConfig()
     });
   }
 
@@ -120,20 +114,22 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     if (method === 'GET') {
       // 返回当前配置
-      return res.json(currentConfig);
+      return res.json(getConfig());
     } else if (method === 'POST') {
       // 更新配置
       const { hongzhongPercent, redCountMode } = req.body || {};
       
+      const updates: any = {};
       if (typeof hongzhongPercent === 'number' && hongzhongPercent >= 0 && hongzhongPercent <= 100) {
-        currentConfig.hongzhongPercent = hongzhongPercent;
+        updates.hongzhongPercent = hongzhongPercent;
       }
       if (typeof redCountMode === 'number' && [0, 1, 2, 3].includes(redCountMode)) {
-        currentConfig.redCountMode = redCountMode;
+        updates.redCountMode = redCountMode;
       }
       
-      console.log('Config updated to:', currentConfig);
-      return res.json({ ok: true, config: currentConfig });
+      const newConfig = updateConfig(updates);
+      console.log('Config updated to:', newConfig);
+      return res.json({ ok: true, config: newConfig });
     }
   }
 

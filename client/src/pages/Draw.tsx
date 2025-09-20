@@ -86,7 +86,7 @@ export default function DrawPage(){
   useEffect(()=>{
     (async ()=>{
       try {
-        const r = await apiFetch('/api/lottery/join',{method:'POST'});
+        const r = await apiFetch('/api/lottery-basic?action=join',{method:'POST'});
         if (r.ok) {
           setJoined(true);
           try { 
@@ -104,7 +104,7 @@ export default function DrawPage(){
   useEffect(()=>{
     (async ()=>{
       if (status==='start' && phase==='idle' && !joined) {
-        try{ const r = await apiFetch('/api/lottery/join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} } if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} } } catch {} } }catch{}
+        try{ const r = await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) { setJoined(true); try{ const data = await r.json(); if (data && data.win === true) { setWon(true); try{ localStorage.setItem('dm_won','1'); }catch{} } if (data && data.participated === false) { setWon(false); try{ localStorage.removeItem('dm_won'); }catch{} } } catch {} } }catch{}
       }
     })();
   },[status, phase, joined]);
@@ -162,7 +162,7 @@ export default function DrawPage(){
   async function handleStart(){
     if(!assetsReady) return; // 等图加载，避免正面未出导致“仍是背面色”
     if(!canDraw || phase!=='idle') return onBlocked();
-    if(!joined){ try{ const r=await apiFetch('/api/lottery/join',{method:'POST'}); if(r.ok) setJoined(true);}catch{} }
+    if(!joined){ try{ const r=await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) setJoined(true);}catch{} }
     // 保持 won，不在开始时清除；仅后台重置（join 返回 participated=false）时清
     setPhase('staging');
     // 初始化槽位
@@ -192,9 +192,9 @@ export default function DrawPage(){
     if (busy) return;
     setBusy(true);
     setPhase('revealing');
-    if(!joined){ try{ const r=await apiFetch('/api/lottery/join',{method:'POST'}); if(r.ok) setJoined(true);}catch{} }
+    if(!joined){ try{ const r=await apiFetch('/api/lottery-basic?action=join',{method:'POST'}); if(r.ok) setJoined(true);}catch{} }
     const pickIndex = cards.findIndex(c=>c.id===id);
-    const res = await apiFetch('/api/lottery/draw',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pick: pickIndex })});
+    const res = await apiFetch('/api/lottery-basic?action=draw',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pick: pickIndex })});
     if(!res.ok){
       if(res.status===409||res.status===429){
         markAlready();

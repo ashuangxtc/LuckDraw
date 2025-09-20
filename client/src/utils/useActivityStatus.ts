@@ -25,7 +25,7 @@ export function useActivityStatus(){
   // 轮询当前设备是否已参与（管理员重置后可自动解锁）
   const fetchEligibility = useCallback(async()=>{
     try{
-      const r = await apiFetch('/api/lottery/join', { method:'POST' });
+      const r = await apiFetch('/api/lottery-basic?action=join', { method:'POST' });
       if (r.ok) {
         const j = await r.json();
         // participated === true 则已参与；false 则可再次抽

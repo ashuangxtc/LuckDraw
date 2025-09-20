@@ -12,14 +12,14 @@ export default function AdminProbabilityControls({ activityId }: { activityId?: 
     (async () => {
       try {
         const qs = activityId ? `?activityId=${encodeURIComponent(activityId)}` : "";
-        const res = await apiFetch(`/api/lottery/admin/get-prob${qs}`);
+        const res = await apiFetch(`/api/admin-basic?action=config`);
         if (!res.ok) return;
         const data = await res.json();
-        if (data?.mode !== undefined) {
-          const m = Math.min(3, Math.max(0, Number(data.mode))) as Mode;
+        if (data?.redCountMode !== undefined) {
+          const m = Math.min(3, Math.max(0, Number(data.redCountMode))) as Mode;
           setMode(m);
-        } else if (typeof data?.probability === 'number') {
-          const p = data.probability;
+        } else if (typeof data?.hongzhongPercent === 'number') {
+          const p = data.hongzhongPercent / 100;
           const guess: Mode = p <= 0.01 ? 0 : p < 0.5 ? 1 : p < 0.99 ? 2 : 3;
           setMode(guess);
         }
@@ -30,12 +30,16 @@ export default function AdminProbabilityControls({ activityId }: { activityId?: 
   async function onSelect(next: Mode) {
     try {
       setSaving(true);
-      const bodyA = JSON.stringify({ activityId, mode: next });
-      const bodyB = JSON.stringify({ activityId, probability: toPercent(next) });
-      let res = await apiFetch('/api/lottery/admin/set-prob', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: bodyA });
-      if (!res.ok) {
-        res = await apiFetch('/api/lottery/admin/set-prob', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: bodyB });
-      }
+      const body = JSON.stringify({ 
+        redCountMode: next, 
+        hongzhongPercent: toPercent(next) * 100 
+      });
+      const res = await apiFetch('/api/admin-basic?action=config', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        credentials: 'include',
+        body 
+      });
       if (!res.ok) throw new Error('save failed');
       setMode(next);
     } catch (e) {

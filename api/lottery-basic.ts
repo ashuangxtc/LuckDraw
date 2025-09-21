@@ -75,11 +75,29 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   // 设置游戏状态 - POST /api/lottery-basic?action=set-state
   if (method === 'POST' && action === 'set-state') {
     const { state } = req.body || {};
-    console.log('Set-state request received:', { state, currentState });
+    const userAgent = req.headers['user-agent'] || '';
+    const referer = req.headers['referer'] || '';
+    const forwardedFor = req.headers['x-forwarded-for'] || '';
+    
+    console.log('Set-state request received:', { 
+      state, 
+      currentState, 
+      userAgent: userAgent.substring(0, 100),
+      referer,
+      forwardedFor,
+      timestamp: new Date().toISOString()
+    });
+    
     if (state && ['waiting', 'open', 'closed'].includes(state)) {
       const oldState = currentState;
       currentState = state;
-      console.log('Lottery state changed:', { from: oldState, to: state, timestamp: new Date().toISOString() });
+      console.log('Lottery state changed:', { 
+        from: oldState, 
+        to: state, 
+        userAgent: userAgent.substring(0, 100),
+        referer,
+        timestamp: new Date().toISOString() 
+      });
       return res.json({
         ok: true,
         state: currentState,
@@ -371,17 +389,32 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // 重置所有数据 - POST /api/lottery-basic?action=reset-all  
+  // 重置所有数据 - POST /api/lottery-basic?action=reset-all
   if (method === 'POST' && action === 'reset-all') {
-    console.log('RESET-ALL triggered! Current state was:', currentState);
-    console.log('Request origin:', req.headers['user-agent'], req.headers['referer']);
+    const userAgent = req.headers['user-agent'] || '';
+    const referer = req.headers['referer'] || '';
+    const forwardedFor = req.headers['x-forwarded-for'] || '';
+    
+    console.log('RESET-ALL triggered!', {
+      currentState,
+      userAgent: userAgent.substring(0, 100),
+      referer,
+      forwardedFor,
+      timestamp: new Date().toISOString(),
+      participantCount: Object.keys(participants).length
+    });
     
     // 清除所有参与者数据
     Object.keys(participants).forEach(key => delete participants[key]);
+    const oldState = currentState;
     currentState = 'waiting';
     currentConfig = { hongzhongPercent: 33, redCountMode: 1 };
     
-    console.log('Lottery data reset - all participants cleared, state reset to waiting');
+    console.log('Lottery data reset completed:', {
+      stateChange: `${oldState} → waiting`,
+      timestamp: new Date().toISOString(),
+      message: 'All participants cleared, state reset to waiting'
+    });
     return res.json({ ok: true, message: 'Lottery data reset successfully' });
   }
 

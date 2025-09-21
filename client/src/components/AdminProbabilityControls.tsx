@@ -12,7 +12,7 @@ export default function AdminProbabilityControls({ activityId }: { activityId?: 
     (async () => {
       try {
         const qs = activityId ? `?activityId=${encodeURIComponent(activityId)}` : "";
-        const res = await apiFetch(`/api/admin-basic?action=config`);
+        const res = await apiFetch(`/api/lottery-basic?action=config`);
         if (!res.ok) return;
         const data = await res.json();
         if (data?.redCountMode !== undefined) {
@@ -34,7 +34,7 @@ export default function AdminProbabilityControls({ activityId }: { activityId?: 
         redCountMode: next, 
         hongzhongPercent: toPercent(next) * 100 
       });
-      const res = await apiFetch('/api/admin-basic?action=config', { 
+      const res = await apiFetch('/api/lottery-basic?action=config', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
         credentials: 'include',

@@ -15,9 +15,9 @@ export default function AdminSimple() {
   const load = async () => {
     setLoading(true)
     try {
-      const r = await fetch('/api/admin-basic?action=participants', { credentials: 'include' })
+      const r = await fetch('/api/lottery-basic?action=participants', { credentials: 'include' })
       const d = await r.json()
-      setItems(d.items || [])
+      setItems(d.participants || [])
     } catch (error) {
       console.error('加载参与者列表失败:', error)
     } finally {
@@ -31,8 +31,8 @@ export default function AdminSimple() {
 
   const resetOne = async (pid: number) => {
     try {
-      await fetch(`/api/admin-basic?action=reset&pid=${pid}`, { 
-        method: 'POST', 
+      await fetch(`/api/lottery-basic?action=reset-participant&pid=${pid}`, { 
+        method: 'DELETE', 
         credentials: 'include' 
       })
       await load()
@@ -47,7 +47,7 @@ export default function AdminSimple() {
     }
     
     try {
-      await fetch('/api/admin-basic?action=reset-all', { 
+      await fetch('/api/lottery-basic?action=reset-all', { 
         method: 'POST', 
         credentials: 'include' 
       })

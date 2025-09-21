@@ -19,21 +19,18 @@ let participants: Record<string, {
   joinTime: string;
 }> = {};
 
-// 初始化标志
-let initialized = false;
-
-// 从KV加载数据到内存
+// 从KV加载数据到内存（每次都加载最新数据）
 async function loadFromKV() {
-  if (initialized) return;
-  
   try {
-    console.log('Loading data from KV...');
+    console.log('Loading fresh data from KV...');
     
     // 加载状态
     const savedState = await kv.get(ACTIVITY_STATE_KEY);
     if (savedState) {
       currentState = savedState as 'waiting' | 'open' | 'closed';
       console.log('Loaded state from KV:', currentState);
+    } else {
+      console.log('No saved state in KV, using default:', currentState);
     }
     
     // 加载配置
@@ -41,6 +38,8 @@ async function loadFromKV() {
     if (savedConfig) {
       currentConfig = savedConfig as any;
       console.log('Loaded config from KV:', currentConfig);
+    } else {
+      console.log('No saved config in KV, using default:', currentConfig);
     }
     
     // 加载参与者
@@ -48,12 +47,13 @@ async function loadFromKV() {
     if (savedParticipants) {
       participants = savedParticipants as any;
       console.log('Loaded participants from KV:', Object.keys(participants).length, 'participants');
+    } else {
+      participants = {}; // 确保重置为空对象
+      console.log('No saved participants in KV, using empty object');
     }
-    
-    initialized = true;
   } catch (error) {
     console.error('Failed to load from KV:', error);
-    initialized = true; // 即使失败也标记为已初始化，使用默认值
+    // 保持默认值，但不影响功能
   }
 }
 
@@ -82,8 +82,22 @@ async function saveParticipantsToKV() {
   try {
     await kv.set(PARTICIPANTS_KEY, participants);
     console.log('Saved participants to KV:', Object.keys(participants).length, 'participants');
+    console.log('Participants data:', JSON.stringify(participants, null, 2).substring(0, 500));
   } catch (error) {
     console.error('Failed to save participants to KV:', error);
+  }
+}
+
+// 清除所有KV数据
+async function clearAllKVData() {
+  try {
+    console.log('Clearing all KV data...');
+    await kv.del(ACTIVITY_STATE_KEY);
+    await kv.del(ACTIVITY_CONFIG_KEY);
+    await kv.del(PARTICIPANTS_KEY);
+    console.log('Successfully cleared all KV data');
+  } catch (error) {
+    console.error('Failed to clear KV data:', error);
   }
 }
 
@@ -92,6 +106,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   await loadFromKV();
   const { method, query } = req;
   const action = query.action as string;
+
+  // 调试KV数据 - GET /api/lottery-basic?action=debug-kv
+  if (method === 'GET' && action === 'debug-kv') {
+    try {
+      const kvState = await kv.get(ACTIVITY_STATE_KEY);
+      const kvConfig = await kv.get(ACTIVITY_CONFIG_KEY);
+      const kvParticipants = await kv.get(PARTICIPANTS_KEY);
+      
+      return res.json({
+        ok: true,
+        debug: {
+          memory: {
+            state: currentState,
+            config: currentConfig,
+            participantCount: Object.keys(participants).length,
+            participants: Object.keys(participants).map(key => ({ 
+              key: key.substring(0, 50), 
+              pid: participants[key].pid,
+              participated: participants[key].participated,
+              win: participants[key].win
+            }))
+          },
+          kv: {
+            state: kvState,
+            config: kvConfig,
+            participantCount: kvParticipants ? Object.keys(kvParticipants).length : 0,
+            participants: kvParticipants ? Object.keys(kvParticipants).map(key => ({ 
+              key: key.substring(0, 50), 
+              pid: kvParticipants[key].pid,
+              participated: kvParticipants[key].participated,
+              win: kvParticipants[key].win
+            })) : []
+          },
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      return res.json({
+        ok: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
 
   // 获取活动状态 - GET /api/lottery-basic?action=status
   if (method === 'GET' && action === 'status') {
@@ -503,7 +561,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     currentState = 'waiting';
     currentConfig = { hongzhongPercent: 33, redCountMode: 1 };
     
-    // 同步所有数据到KV
+    // 彻底清除KV数据，然后重新保存默认值
+    await clearAllKVData();
     await saveStateToKV();
     await saveConfigToKV();
     await saveParticipantsToKV();

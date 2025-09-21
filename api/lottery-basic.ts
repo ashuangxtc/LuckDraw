@@ -305,6 +305,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 设置配置 - POST /api/lottery-basic?action=config
   if (method === 'POST' && action === 'config') {
+    // 检查管理员认证
+    const cookies = req.headers.cookie || '';
+    const isLoggedIn = cookies.includes('admin_logged_in=true');
+    
+    if (!isLoggedIn) {
+      return res.status(401).json({ ok: false, error: 'Not authenticated' });
+    }
+    
     const { hongzhongPercent, redCountMode } = req.body || {};
     
     if (typeof hongzhongPercent === 'number') {
@@ -374,6 +382,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 设置游戏状态 - POST /api/lottery-basic?action=set-state
   if (method === 'POST' && action === 'set-state') {
+    // 检查管理员认证
+    const cookies = req.headers.cookie || '';
+    const isLoggedIn = cookies.includes('admin_logged_in=true');
+    
+    if (!isLoggedIn) {
+      return res.status(401).json({ ok: false, error: 'Not authenticated' });
+    }
+    
     const { state } = req.body || {};
     const userAgent = req.headers['user-agent'] || '';
     const referer = req.headers['referer'] || '';
@@ -637,6 +653,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 重置指定参与者
   if (method === 'DELETE' && action === 'reset-participant') {
+    // 检查管理员认证
+    const cookies = req.headers.cookie || '';
+    const isLoggedIn = cookies.includes('admin_logged_in=true');
+    
+    if (!isLoggedIn) {
+      return res.status(401).json({ ok: false, error: 'Not authenticated' });
+    }
+    
     const pidToReset = parseInt(query.pid as string);
     
     if (!pidToReset) {
@@ -697,6 +721,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 重置所有数据 - POST /api/lottery-basic?action=reset-all
   if (method === 'POST' && action === 'reset-all') {
+    // 检查管理员认证
+    const cookies = req.headers.cookie || '';
+    const isLoggedIn = cookies.includes('admin_logged_in=true');
+    
+    if (!isLoggedIn) {
+      return res.status(401).json({ ok: false, error: 'Not authenticated' });
+    }
+    
     const userAgent = req.headers['user-agent'] || '';
     const referer = req.headers['referer'] || '';
     const forwardedFor = req.headers['x-forwarded-for'] || '';

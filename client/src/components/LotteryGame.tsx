@@ -42,7 +42,7 @@ const LotteryGame = () => {
   // 检查活动状态
   const checkActivityStatus = async () => {
     try {
-      const response = await fetch('/api/status');
+      const response = await fetch('/api/lottery-basic?action=status');
       const data = await response.json();
       
       if (data.ok) {
@@ -92,7 +92,7 @@ const LotteryGame = () => {
 
     try {
       // 调用真实的抽奖API
-      const response = await fetch('/api/draw', {
+      const response = await fetch('/api/lottery-basic?action=draw', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

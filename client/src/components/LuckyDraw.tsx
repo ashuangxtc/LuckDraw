@@ -34,14 +34,16 @@ export default function LuckyDraw() {
     }).catch(console.error)
 
     // 从后端获取真实的牌面排列
-    fetch('/api/lottery-basic?action=arrangement', { credentials: 'include' })
+    fetch('/api/lottery-basic?action=deal', { method: 'POST', credentials: 'include' })
       .then(r => r.json())
       .then(data => {
-        const faces = data.faces || ['白板', '红中', '白板']
+        const faces = data.faces || ['blank', 'zhong', 'blank']
+        // 只取前3张牌用于LuckyDraw
+        const first3Faces = faces.slice(0, 3)
         setCards([
-          { id: 0, face: faces[0] === '红中' ? 'red' : 'blank' },
-          { id: 1, face: faces[1] === '红中' ? 'red' : 'blank' },
-          { id: 2, face: faces[2] === '红中' ? 'red' : 'blank' }
+          { id: 0, face: first3Faces[0] === 'zhong' ? 'red' : 'blank' },
+          { id: 1, face: first3Faces[1] === 'zhong' ? 'red' : 'blank' },
+          { id: 2, face: first3Faces[2] === 'zhong' ? 'red' : 'blank' }
         ])
         console.log('牌面排列:', faces)
       })

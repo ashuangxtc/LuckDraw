@@ -120,6 +120,7 @@ export default function AdminEnhanced() {
       const response = await fetch('/api/lottery-basic?action=set-state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ state })
       });
 
@@ -141,7 +142,8 @@ export default function AdminEnhanced() {
   const resetOne = async (pid: number) => {
     try {
       await fetch(`/api/lottery-basic?action=reset-participant&pid=${pid}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
       await loadData()
       alert(`参与者 #${pid} 已重置`)
@@ -159,7 +161,8 @@ export default function AdminEnhanced() {
     try {
       await fetch('/api/lottery-basic?action=reset-all', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
       })
       await loadData()
     } catch (error) {

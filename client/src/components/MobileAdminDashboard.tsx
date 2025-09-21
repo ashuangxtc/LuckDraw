@@ -66,14 +66,14 @@ const MobileAdminDashboard = () => {
   // 获取参与者记录
   const fetchLotteryPlays = async () => {
     try {
-      const response = await fetch('/api/admin-basic?action=participants');
+      const response = await fetch('/api/lottery-basic?action=participants');
       
       if (response.ok) {
         const data = await response.json();
-        const plays = data.items.filter(p => p.participated).map(p => ({
+        const plays = (data.participants || []).filter(p => p.participated).map(p => ({
           deviceId: `PID-${p.pid}`,
           result: p.win ? '红中' : '白板',
-          timestamp: p.drawAt
+          timestamp: p.joinTime
         }));
         setLotteryPlays(plays);
       }
@@ -85,7 +85,7 @@ const MobileAdminDashboard = () => {
   // 获取配置
   const fetchConfig = async () => {
     try {
-      const response = await fetch('/api/admin-basic?action=config');
+      const response = await fetch('/api/lottery-basic?action=config');
       if (response.ok) {
         const data = await response.json();
         setConfig(data);
@@ -209,7 +209,7 @@ const MobileAdminDashboard = () => {
   // 重置本轮
   const resetLottery = async () => {
     try {
-      const response = await fetch('/api/admin-basic?action=reset-all', {
+      const response = await fetch('/api/lottery-basic?action=reset-all', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -240,7 +240,7 @@ const MobileAdminDashboard = () => {
   const updateConfigRealtime = async (newPercent: number) => {
     try {
       console.log('实时更新配置:', { hongzhongPercent: newPercent });
-      const response = await fetch('/api/admin-basic?action=config', {
+      const response = await fetch('/api/lottery-basic?action=config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -291,11 +291,8 @@ const MobileAdminDashboard = () => {
   // 重置单个用户
   const resetSingleUser = async (pid: number) => {
     try {
-      const response = await fetch(`/api/admin-basic?action=reset&pid=${pid}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await fetch(`/api/lottery-basic?action=reset-participant&pid=${pid}`, {
+        method: 'DELETE'
       });
 
       if (response.ok) {

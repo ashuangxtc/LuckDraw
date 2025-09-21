@@ -54,10 +54,11 @@ export default function AdminEnhanced() {
       console.log('状态数据:', statusRes);
       console.log('参与者数据:', participantsRes);
       
-      // 合并数据
+      // 合并数据 - 映射为items格式以兼容现有渲染逻辑
       const mergedData = {
         ok: true,
         participants: participantsRes.participants || [],
+        items: participantsRes.participants || [], // 添加items映射兼容现有渲染
         stats: statusRes.stats || { total: 0, participated: 0, winners: 0 },
         state: statusRes.state,
         config: statusRes.config

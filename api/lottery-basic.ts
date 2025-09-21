@@ -1,13 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { kv } from '@vercel/kv';
 
-// 内联状态存储，避免导入问题  
+// KV存储键名
+const ACTIVITY_STATE_KEY = 'activity:state';
+const ACTIVITY_CONFIG_KEY = 'activity:config'; 
+const PARTICIPANTS_KEY = 'activity:participants';
+
+// 内存缓存（用于性能，但会与KV同步）
 let currentState: 'waiting' | 'open' | 'closed' = 'waiting';
 let currentConfig = {
   hongzhongPercent: 33,
   redCountMode: 1
 };
-
-// 参与者记录
 let participants: Record<string, {
   pid: number;
   participated: boolean;
@@ -15,7 +19,77 @@ let participants: Record<string, {
   joinTime: string;
 }> = {};
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+// 初始化标志
+let initialized = false;
+
+// 从KV加载数据到内存
+async function loadFromKV() {
+  if (initialized) return;
+  
+  try {
+    console.log('Loading data from KV...');
+    
+    // 加载状态
+    const savedState = await kv.get(ACTIVITY_STATE_KEY);
+    if (savedState) {
+      currentState = savedState as 'waiting' | 'open' | 'closed';
+      console.log('Loaded state from KV:', currentState);
+    }
+    
+    // 加载配置
+    const savedConfig = await kv.get(ACTIVITY_CONFIG_KEY);
+    if (savedConfig) {
+      currentConfig = savedConfig as any;
+      console.log('Loaded config from KV:', currentConfig);
+    }
+    
+    // 加载参与者
+    const savedParticipants = await kv.get(PARTICIPANTS_KEY);
+    if (savedParticipants) {
+      participants = savedParticipants as any;
+      console.log('Loaded participants from KV:', Object.keys(participants).length, 'participants');
+    }
+    
+    initialized = true;
+  } catch (error) {
+    console.error('Failed to load from KV:', error);
+    initialized = true; // 即使失败也标记为已初始化，使用默认值
+  }
+}
+
+// 保存状态到KV
+async function saveStateToKV() {
+  try {
+    await kv.set(ACTIVITY_STATE_KEY, currentState);
+    console.log('Saved state to KV:', currentState);
+  } catch (error) {
+    console.error('Failed to save state to KV:', error);
+  }
+}
+
+// 保存配置到KV
+async function saveConfigToKV() {
+  try {
+    await kv.set(ACTIVITY_CONFIG_KEY, currentConfig);
+    console.log('Saved config to KV:', currentConfig);
+  } catch (error) {
+    console.error('Failed to save config to KV:', error);
+  }
+}
+
+// 保存参与者到KV
+async function saveParticipantsToKV() {
+  try {
+    await kv.set(PARTICIPANTS_KEY, participants);
+    console.log('Saved participants to KV:', Object.keys(participants).length, 'participants');
+  } catch (error) {
+    console.error('Failed to save participants to KV:', error);
+  }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // 确保数据已从KV加载
+  await loadFromKV();
   const { method, query } = req;
   const action = query.action as string;
 
@@ -91,6 +165,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     if (state && ['waiting', 'open', 'closed'].includes(state)) {
       const oldState = currentState;
       currentState = state;
+      
+      // 同步到KV存储
+      await saveStateToKV();
+      
       console.log('Lottery state changed:', { 
         from: oldState, 
         to: state, 
@@ -152,6 +230,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       console.log('新参与者创建:', { pid: participant.pid });
     }
     
+    // 同步参与者数据到KV
+    await saveParticipantsToKV();
+    
     return res.json({
       pid: participant.pid,
       participated: participant.participated,
@@ -206,6 +287,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     // 标记为已参与
     participant.participated = true;
     participants[clientId] = participant;
+
+    // 同步参与者数据到KV
+    await saveParticipantsToKV();
 
     console.log('抽奖执行 - PID:', pid);
     return res.json({ 
@@ -325,6 +409,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     participant.win = isWin;
     participants[clientId] = participant;
 
+    // 同步参与者数据到KV
+    await saveParticipantsToKV();
+
     console.log('翻牌结果:', { pid, cardIndex, isWin });
 
     return res.json({
@@ -356,6 +443,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (found) {
+      // 同步参与者数据到KV
+      await saveParticipantsToKV();
       console.log('参与者重置:', pidToReset);
       return res.json({ ok: true, message: `Participant ${pidToReset} reset` });
     } else {
@@ -369,6 +458,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     
     if (state && ['waiting', 'open', 'closed'].includes(state)) {
       currentState = state;
+      // 同步状态到KV
+      await saveStateToKV();
       console.log('Lottery state synced to:', currentState);
     }
     
@@ -379,6 +470,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       if (typeof config.redCountMode === 'number') {
         currentConfig.redCountMode = config.redCountMode;
       }
+      // 同步配置到KV
+      await saveConfigToKV();
       console.log('Lottery config synced to:', currentConfig);
     }
     
@@ -409,6 +502,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     const oldState = currentState;
     currentState = 'waiting';
     currentConfig = { hongzhongPercent: 33, redCountMode: 1 };
+    
+    // 同步所有数据到KV
+    await saveStateToKV();
+    await saveConfigToKV();
+    await saveParticipantsToKV();
     
     console.log('Lottery data reset completed:', {
       stateChange: `${oldState} → waiting`,

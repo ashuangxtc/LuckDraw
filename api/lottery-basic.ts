@@ -434,30 +434,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!participant) {
-      // 如果没有找到参与者，创建一个默认的（用于演示）
-      const userAgent = req.headers['user-agent'] || '';
-      const defaultClientId = `demo_${userAgent}_${Date.now()}`.substring(0, 100);
-      
-      let pid = Math.floor(Math.random() * 900) + 100;
-      const existingParticipants = Object.values(participants);
-      while (existingParticipants.some(p => p.pid === pid)) {
-        pid = Math.floor(Math.random() * 900) + 100;
-      }
-      
-      participant = {
-        pid: pid,
-        participated: true, // 自动标记为已参与
-        win: false,
-        joinTime: new Date().toISOString()
-      };
-      participants[defaultClientId] = participant;
-      console.log('创建默认参与者用于pick:', { pid });
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'Participant not found. Please join the activity first.' 
+      });
     }
 
     if (!participant.participated) {
-      // 自动标记为已参与，兼容性处理
-      participant.participated = true;
-      console.log('自动标记参与者为已参与:', { pid: participant.pid });
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'Participant has not drawn yet. Please draw first.' 
+      });
     }
 
     // 这里应该根据实际的牌组数据来判断是否中奖

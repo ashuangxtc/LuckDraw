@@ -125,11 +125,8 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   // 加载统计数据（不更新概率滑块，避免覆盖用户设置）
   const loadStatsWithoutProbability = async () => {
     try {
-      const response = await fetch('/api/admin/stats', {
-        headers: {
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
-        }
-      });
+      // 使用新API替代旧API
+      const response = await fetch('/api/lottery-basic?action=status');
       const data = await response.json();
       
       if (data.ok) {
@@ -230,17 +227,9 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       const startTimestamp = startTime ? new Date(startTime).getTime() : null;
       const endTimestamp = endTime ? new Date(endTime).getTime() : null;
 
-      const response = await fetch('/api/admin/set-window', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
-        },
-        body: JSON.stringify({ 
-          startAt: startTimestamp,
-          endAt: endTimestamp
-        })
-      });
+      // 暂时禁用时间窗口设置功能，避免API冲突
+      // TODO: 在lottery-basic.ts中实现时间窗口功能
+      throw new Error('时间窗口设置功能暂时禁用');
 
       const data = await response.json();
       if (!data.ok) {
@@ -260,11 +249,9 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   // 导出CSV
   const handleExportCSV = async () => {
     try {
-      const response = await fetch('/api/admin/export', {
-        headers: {
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
-        }
-      });
+      // 暂时禁用CSV导出功能，避免API冲突  
+      // TODO: 在lottery-basic.ts中实现CSV导出功能
+      throw new Error('CSV导出功能暂时禁用');
 
       if (!response.ok) {
         throw new Error('导出失败');

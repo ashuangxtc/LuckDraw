@@ -158,11 +158,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   // 加载参与者列表
   const loadParticipants = async () => {
     try {
-      const response = await fetch('/api/admin/participants', {
-        headers: {
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
-        }
-      });
+      const response = await fetch('/api/lottery-basic?action=participants');
       const data = await response.json();
       
       if (data.ok) {

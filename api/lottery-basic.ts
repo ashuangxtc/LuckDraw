@@ -107,6 +107,115 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
   const action = query.action as string;
 
+  // 强制清理KV数据 - POST /api/lottery-basic?action=force-clear-kv
+  if (method === 'POST' && action === 'force-clear-kv') {
+    try {
+      console.log('Force clearing all KV data...');
+      
+      // 强制删除所有相关的KV键
+      const keysToDelete = [
+        ACTIVITY_STATE_KEY,
+        ACTIVITY_CONFIG_KEY,
+        PARTICIPANTS_KEY,
+        // 可能的其他键
+        'activity:participants',
+        'participants',
+        'state',
+        'config',
+        'lottery:state',
+        'lottery:config',
+        'lottery:participants',
+        // VercelStorage系统的键
+        'activity_state',
+        'activity_config',
+        'next_pid'
+      ];
+      
+      // 还需要清除所有participant:*和client_id:*键
+      try {
+        const participantKeys = await kv.keys('participant:*');
+        const clientIdKeys = await kv.keys('client_id:*');
+        const allKeys = [...keysToDelete, ...participantKeys, ...clientIdKeys];
+        
+        console.log('Found keys to delete:', allKeys.length);
+        
+        for (const key of allKeys) {
+          try {
+            await kv.del(key);
+            console.log(`Deleted KV key: ${key}`);
+          } catch (error) {
+            console.log(`Failed to delete KV key ${key}:`, error);
+          }
+        }
+      } catch (error) {
+        // 如果keys()不支持，回退到删除已知键
+        for (const key of keysToDelete) {
+          try {
+            await kv.del(key);
+            console.log(`Deleted KV key: ${key}`);
+          } catch (error) {
+            console.log(`Failed to delete KV key ${key}:`, error);
+          }
+        }
+      }
+      
+      // 清空内存数据
+      Object.keys(participants).forEach(key => delete participants[key]);
+      currentState = 'waiting';
+      currentConfig = { hongzhongPercent: 33, redCountMode: 1 };
+      
+      // 等待一下
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // 验证清理结果
+      const remainingKeys = [];
+      
+      // 检查基本键
+      const basicKeys = [ACTIVITY_STATE_KEY, ACTIVITY_CONFIG_KEY, PARTICIPANTS_KEY, 'activity_state', 'activity_config', 'next_pid'];
+      for (const key of basicKeys) {
+        try {
+          const value = await kv.get(key);
+          if (value !== null) {
+            remainingKeys.push({ key, value });
+          }
+        } catch {}
+      }
+      
+      // 检查participant和client_id键
+      try {
+        const participantKeys = await kv.keys('participant:*');
+        const clientIdKeys = await kv.keys('client_id:*');
+        for (const key of [...participantKeys, ...clientIdKeys]) {
+          try {
+            const value = await kv.get(key);
+            if (value !== null) {
+              remainingKeys.push({ key, value: 'exists' });
+            }
+          } catch {}
+        }
+      } catch {}
+      
+      console.log('Force clear completed. Remaining keys:', remainingKeys);
+      
+      return res.json({
+        ok: true,
+        message: 'Force clear completed',
+        clearedKeys: keysToDelete,
+        remainingKeys: remainingKeys,
+        memoryState: {
+          participantCount: Object.keys(participants).length,
+          state: currentState,
+          config: currentConfig
+        }
+      });
+    } catch (error) {
+      return res.json({
+        ok: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
   // 调试KV数据 - GET /api/lottery-basic?action=debug-kv
   if (method === 'GET' && action === 'debug-kv') {
     try {

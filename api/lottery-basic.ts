@@ -132,11 +132,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             state: kvState,
             config: kvConfig,
             participantCount: kvParticipants ? Object.keys(kvParticipants).length : 0,
-            participants: kvParticipants ? Object.keys(kvParticipants).map(key => ({ 
+            participants: kvParticipants ? Object.keys(kvParticipants as any).map(key => ({ 
               key: key.substring(0, 50), 
-              pid: kvParticipants[key].pid,
-              participated: kvParticipants[key].participated,
-              win: kvParticipants[key].win
+              pid: (kvParticipants as any)[key].pid,
+              participated: (kvParticipants as any)[key].participated,
+              win: (kvParticipants as any)[key].win
             })) : []
           },
           timestamp: new Date().toISOString()
@@ -145,7 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (error) {
       return res.json({
         ok: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString()
       });
     }
@@ -272,7 +272,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let participant = participants[clientId];
     if (!participant) {
       // 生成3位数PID，确保唯一性
-      let pid;
+      let pid: number;
       const existingParticipants = Object.values(participants);
       do {
         pid = Math.floor(Math.random() * 900) + 100; // 100-999
@@ -413,7 +413,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    let participant = null;
+    let participant: { pid: number; participated: boolean; win: boolean; joinTime: string } | null = null;
     
     // 如果有clientId，尝试使用精确匹配
     if (clientId) {
@@ -430,7 +430,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       // 如果没有clientId，使用第一个已参与的参与者（兼容旧逻辑）
       const allParticipants = Object.values(participants);
-      participant = allParticipants.find(p => p.participated);
+      participant = allParticipants.find(p => p.participated) || null;
     }
 
     if (!participant) {

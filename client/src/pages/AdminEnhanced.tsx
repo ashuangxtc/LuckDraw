@@ -157,10 +157,9 @@ export default function AdminEnhanced() {
       return
     }
     try {
-      await fetch('/api/lottery-basic?action=reset', {
+      await fetch('/api/lottery-basic?action=reset-all', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        headers: { 'Content-Type': 'application/json' }
       })
       await loadData()
     } catch (error) {

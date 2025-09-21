@@ -550,16 +550,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // 彻底清除KV数据，然后重新保存默认值
     await clearAllKVData();
+    
+    // 等待一下确保删除完成
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     await saveStateToKV();
     await saveConfigToKV();
     await saveParticipantsToKV();
     
+    // 验证重置结果
+    const verifyState = await kv.get(ACTIVITY_STATE_KEY);
+    const verifyParticipants = await kv.get(PARTICIPANTS_KEY);
+    
     console.log('Lottery data reset completed:', {
       stateChange: `${oldState} → waiting`,
       timestamp: new Date().toISOString(),
-      message: 'All participants cleared, state reset to waiting'
+      message: 'All participants cleared, state reset to waiting',
+      verification: {
+        kvState: verifyState,
+        kvParticipantCount: verifyParticipants ? Object.keys(verifyParticipants).length : 0,
+        memoryParticipantCount: Object.keys(participants).length
+      }
     });
-    return res.json({ ok: true, message: 'Lottery data reset successfully' });
+    return res.json({ 
+      ok: true, 
+      message: 'Lottery data reset successfully',
+      verification: {
+        state: verifyState,
+        participantCount: verifyParticipants ? Object.keys(verifyParticipants).length : 0
+      }
+    });
   }
 
   return res.status(404).json({ error: 'Not found' });

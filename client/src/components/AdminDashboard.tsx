@@ -333,11 +333,10 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
 
     setIsResettingAll(true);
     try {
-      const response = await fetch('/api/admin/reset-all', {
+      const response = await fetch('/api/lottery-basic?action=reset-all', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
+          'Content-Type': 'application/json'
         }
       });
 

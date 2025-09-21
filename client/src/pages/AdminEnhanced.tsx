@@ -78,7 +78,7 @@ export default function AdminEnhanced() {
 
   useEffect(() => {
     // 先探测登录态
-    fetch('/api/admin-basic?action=me', { credentials: 'include' })
+    fetch('/api/lottery-basic?action=me', { credentials: 'include' })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(() => { setAuthed(true); loadData() })
       .catch(() => setAuthed(false))
@@ -90,7 +90,7 @@ export default function AdminEnhanced() {
     setAuthErr('')
     try{
       console.log('尝试登录，密码:', pwd)
-      const r = await fetch('/api/admin-basic?action=login', {
+      const r = await fetch('/api/lottery-basic?action=login', {
         method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ password: pwd })
       })

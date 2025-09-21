@@ -168,7 +168,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       // 验证清理结果
-      const remainingKeys = [];
+      const remainingKeys: Array<{ key: string; value: any }> = [];
       
       // 检查基本键
       const basicKeys = [ACTIVITY_STATE_KEY, ACTIVITY_CONFIG_KEY, PARTICIPANTS_KEY, 'activity_state', 'activity_config', 'next_pid'];
@@ -301,6 +301,65 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 获取配置 - GET /api/lottery-basic?action=config  
   if (method === 'GET' && action === 'config') {
     return res.json(currentConfig);
+  }
+
+  // 设置配置 - POST /api/lottery-basic?action=config
+  if (method === 'POST' && action === 'config') {
+    const { hongzhongPercent, redCountMode } = req.body || {};
+    
+    if (typeof hongzhongPercent === 'number') {
+      currentConfig.hongzhongPercent = Math.min(100, Math.max(0, hongzhongPercent));
+    }
+    
+    if (typeof redCountMode === 'number') {
+      currentConfig.redCountMode = Math.min(3, Math.max(0, redCountMode));
+    }
+    
+    // 同步配置到KV
+    await saveConfigToKV();
+    
+    console.log('Config updated:', currentConfig);
+    
+    return res.json({
+      ok: true,
+      config: currentConfig,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // 管理员登录 - POST /api/lottery-basic?action=login
+  if (method === 'POST' && action === 'login') {
+    try {
+      const { password } = req.body || {};
+      console.log('Admin login attempt received');
+      
+      const expectedPassword = process.env.ADMIN_PASSWORD || 'admin123';
+      
+      if (password === expectedPassword) {
+        res.setHeader('Set-Cookie', 'admin_logged_in=true; HttpOnly; Path=/; Max-Age=3600');
+        console.log('Admin login successful');
+        return res.json({ ok: true, message: 'Login successful' });
+      } else {
+        console.log('Admin login failed - wrong password');
+        return res.status(401).json({ ok: false, error: 'Invalid password' });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return res.status(500).json({ ok: false, error: 'Login failed' });
+    }
+  }
+
+  // 管理员登出 - POST /api/lottery-basic?action=logout
+  if (method === 'POST' && action === 'logout') {
+    res.setHeader('Set-Cookie', 'admin_logged_in=; HttpOnly; Path=/; Max-Age=0');
+    return res.json({ ok: true, message: 'Logout successful' });
+  }
+
+  // 检查管理员状态 - GET /api/lottery-basic?action=me
+  if (method === 'GET' && action === 'me') {
+    const cookies = req.headers.cookie || '';
+    const isLoggedIn = cookies.includes('admin_logged_in=true');
+    return res.json({ loggedIn: isLoggedIn });
   }
 
   // 健康检查

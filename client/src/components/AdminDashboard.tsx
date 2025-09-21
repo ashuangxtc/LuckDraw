@@ -87,14 +87,11 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     }
   };
 
-  // 加载统计数据
+  // 加载统计数据 - 临时禁用旧API避免数据冲突
   const loadStats = async () => {
     try {
-      const response = await fetch('/api/admin/stats', {
-        headers: {
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
-        }
-      });
+      // 使用新API替代旧API
+      const response = await fetch('/api/lottery-basic?action=status');
       const data = await response.json();
       
       if (data.ok) {
@@ -173,13 +170,13 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const handleSaveProbability = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch('/api/admin/config', {
+      // 使用新API替代旧API
+      const response = await fetch('/api/lottery-basic?action=config', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ probability: winProbability[0] / 100 })
+        body: JSON.stringify({ hongzhongPercent: winProbability[0] })
       });
 
       const data = await response.json();
@@ -202,13 +199,13 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const handleUpdateStatus = async (newStatus: string) => {
     setIsUpdatingStatus(true);
     try {
-      const response = await fetch('/api/admin/set-status', {
+      // 使用新API替代旧API
+      const response = await fetch('/api/lottery-basic?action=set-state', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ state: newStatus })
       });
 
       const data = await response.json();
@@ -294,14 +291,9 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     // userIdentifier在这里实际上是userKey
     setIsResettingUser(userIdentifier);
     try {
-      const response = await fetch('/api/admin/reset-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-password': sessionStorage.getItem('admin-token') || ''
-        },
-        body: JSON.stringify({ userKey: userIdentifier })
-      });
+      // 暂时禁用单个用户重置功能，避免API冲突
+      // TODO: 实现基于PID的单用户重置
+      throw new Error('单用户重置功能暂时禁用，请使用批量重置');
 
       const data = await response.json();
       if (!data.ok) {
